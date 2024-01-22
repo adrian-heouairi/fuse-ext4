@@ -1,5 +1,9 @@
 # fuse-ext4
 
+Dependencies:
+
+`sudo apt install libfuse3-dev`
+
 Creation of test.ext4:
 
 ```
