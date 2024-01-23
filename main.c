@@ -21,6 +21,10 @@
 
 #define FUSE_USE_VERSION 31
 
+#define DIR_NAME "d"
+#define DIR_CHILD_NAME "e"
+#define DIR_CHILD_CONTENTS "hello world"
+
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
@@ -69,7 +73,14 @@ static int hello_getattr(const char *path, struct stat *stbuf,
 	memset(stbuf, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 3;
+	} else if (strcmp(path+1, DIR_NAME) == 0) {
+		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+	} else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+		stbuf->st_size = strlen(DIR_CHILD_CONTENTS);
 	} else if (strcmp(path+1, options.filename) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
@@ -88,19 +99,29 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) fi;
 	(void) flags;
 
-	if (strcmp(path, "/") != 0)
+	char dir_fullpath[256];
+	dir_fullpath[0] = '/';
+	dir_fullpath[1] = '\0';
+
+	if (strcmp(path, "/") == 0) {
+		filler(buf, options.filename, NULL, 0, 0);
+		filler(buf, DIR_NAME, NULL, 0, 0);
+	} else if (strcmp(path, strcat(dir_fullpath, DIR_NAME)) == 0) {
+		filler(buf, DIR_CHILD_NAME, NULL, 0, 0);
+	} else {
 		return -ENOENT;
+	}
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	filler(buf, options.filename, NULL, 0, 0);
 
 	return 0;
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-	if (strcmp(path+1, options.filename) != 0)
+	if ( (strcmp(path+1, options.filename) != 0) &&
+			(strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) != 0) )
 		return -ENOENT;
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -114,14 +135,21 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	size_t len;
 	(void) fi;
-	if(strcmp(path+1, options.filename) != 0)
+
+	const char *contents;
+
+	if(strcmp(path+1, options.filename) == 0)
+		contents = options.contents;
+	else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0)
+		contents = DIR_CHILD_CONTENTS;
+	else
 		return -ENOENT;
 
-	len = strlen(options.contents);
+	len = strlen(contents);
 	if (offset < (long)len) {
 		if (offset + size > len)
 			size = len - offset;
-		memcpy(buf, options.contents + offset, size);
+		memcpy(buf, contents + offset, size);
 	} else
 		size = 0;
 
