@@ -7,7 +7,7 @@ LDFLAGS=$(shell pkg-config fuse3 --libs)
 TARGET=fuse-ext4
 
 # Source files
-SOURCES=main.c
+SOURCES=data_structures.c main.c
 
 # Default target
 all: $(TARGET)
@@ -35,7 +35,7 @@ run: $(TARGET)
 
 # Clean target
 clean:
-	@rm -f $(TARGET)
+	@rm -vf $(TARGET)
 	@echo "Cleaned."
 
 .PHONY: all deps run clean

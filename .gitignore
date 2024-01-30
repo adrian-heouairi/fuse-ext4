@@ -54,3 +54,5 @@ dkms.conf
 /fuse-ext4
 /mntpt
 /dumps
+
+.vscode

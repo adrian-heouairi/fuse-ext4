@@ -21,10 +21,6 @@
 
 #define FUSE_USE_VERSION 31
 
-#define DIR_NAME "d"
-#define DIR_CHILD_NAME "e"
-#define DIR_CHILD_CONTENTS "hello world"
-
 #include <fuse.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,6 +28,8 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <assert.h>
+
+#include "data_structures.h"
 
 /*
  * Command line options
@@ -56,15 +54,7 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-typedef struct fuse_file fuse_file;
-struct fuse_file{
-	nlink_t nlink;
-	mode_t mode;
-	char path[256];
-	fuse_file *children[256];
-};
-
-fuse_file root = {.nlink = 2, .mode = S_IFDIR | 0755, .path = "/"};
+node *root;
 
 static void *hello_init(struct fuse_conn_info *conn,
 			struct fuse_config *cfg)
@@ -80,23 +70,14 @@ static int hello_getattr(const char *path, struct stat *stbuf,
 	(void) fi; // Suppress -Wextra unused parameter warning
 	int res = 0;
 
+	node *ret = get_node_from_path(path, root);
+
+	if (ret == 0)
+		return -ENOENT;
+
 	memset(stbuf, 0, sizeof(struct stat));
-	if (strcmp(path, "/") == 0) {
-		stbuf->st_mode = root.mode;
-		stbuf->st_nlink = root.nlink;
-	/*} else if (strcmp(path+1, DIR_NAME) == 0) {
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(DIR_CHILD_CONTENTS);
-	} else if (strcmp(path+1, options.filename) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(options.contents); */
-	} else
-		res = -ENOENT;
+	stbuf->st_mode = ret->info.st_mode;
+	//stbuf->st_nlink = root.info.st_nlink;
 
 	return res;
 }
@@ -109,15 +90,8 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) fi;
 	(void) flags;
 
-	/*char dir_fullpath[256];
-	dir_fullpath[0] = '/';
-	dir_fullpath[1] = '\0';*/
-
-	if (strcmp(path, "/") == 0) {
-		//filler(buf, options.filename, NULL, 0, 0);
-		//filler(buf, DIR_NAME, NULL, 0, 0);
-	// } else if (strcmp(path, strcat(dir_fullpath, DIR_NAME)) == 0) {
-	// 	filler(buf, DIR_CHILD_NAME, NULL, 0, 0);
+	if (strcmp(path, root->path) == 0) {
+		filler(buf, "/a", NULL, 0, 0);
 	} else {
 		return -ENOENT;
 	}
@@ -130,8 +104,9 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-	if ( (strcmp(path+1, options.filename) != 0) &&
-			(strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) != 0) )
+	(void)path;
+	//if ( (strcmp(path+1, options.filename) != 0) &&
+	//		(strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) != 0) )
 		return -ENOENT;
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -143,16 +118,17 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
+	(void)path;
 	size_t len;
 	(void) fi;
 
 	const char *contents;
 
-	if(strcmp(path+1, options.filename) == 0)
+	/*if(strcmp(path+1, options.filename) == 0)
 		contents = options.contents;
 	else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0)
 		contents = DIR_CHILD_CONTENTS;
-	else
+	else*/
 		return -ENOENT;
 
 	len = strlen(contents);
@@ -186,7 +162,13 @@ static void show_help(const char *progname)
 }
 
 int main(int argc, char *argv[])
-{
+{	
+	root = create_node("/", S_IFDIR, 0755);
+
+	node *a = create_node("/a", S_IFREG, 0644);
+
+	add_child(root, a);
+
 	int ret;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
