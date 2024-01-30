@@ -56,6 +56,15 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
+typedef struct {
+	nlink_t nlink;
+	mode_t mode;
+	char path[256];
+	fuse_file children[256];
+} fuse_file;
+
+fuse_file root = {.nlink = 2, .mode = S_IFDIR | 0755, .path = "/"};
+
 static void *hello_init(struct fuse_conn_info *conn,
 			struct fuse_config *cfg)
 {
@@ -72,9 +81,9 @@ static int hello_getattr(const char *path, struct stat *stbuf,
 
 	memset(stbuf, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0) {
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 3;
-	} else if (strcmp(path+1, DIR_NAME) == 0) {
+		stbuf->st_mode = root.mode;
+		stbuf->st_nlink = root.nlink;
+	/*} else if (strcmp(path+1, DIR_NAME) == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	} else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0) {
@@ -84,7 +93,7 @@ static int hello_getattr(const char *path, struct stat *stbuf,
 	} else if (strcmp(path+1, options.filename) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(options.contents);
+		stbuf->st_size = strlen(options.contents); */
 	} else
 		res = -ENOENT;
 
@@ -99,15 +108,15 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) fi;
 	(void) flags;
 
-	char dir_fullpath[256];
+	/*char dir_fullpath[256];
 	dir_fullpath[0] = '/';
-	dir_fullpath[1] = '\0';
+	dir_fullpath[1] = '\0';*/
 
 	if (strcmp(path, "/") == 0) {
-		filler(buf, options.filename, NULL, 0, 0);
-		filler(buf, DIR_NAME, NULL, 0, 0);
-	} else if (strcmp(path, strcat(dir_fullpath, DIR_NAME)) == 0) {
-		filler(buf, DIR_CHILD_NAME, NULL, 0, 0);
+		//filler(buf, options.filename, NULL, 0, 0);
+		//filler(buf, DIR_NAME, NULL, 0, 0);
+	// } else if (strcmp(path, strcat(dir_fullpath, DIR_NAME)) == 0) {
+	// 	filler(buf, DIR_CHILD_NAME, NULL, 0, 0);
 	} else {
 		return -ENOENT;
 	}
