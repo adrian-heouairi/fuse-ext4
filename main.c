@@ -56,12 +56,13 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-typedef struct {
+typedef struct fuse_file fuse_file;
+struct fuse_file{
 	nlink_t nlink;
 	mode_t mode;
 	char path[256];
-	fuse_file children[256];
-} fuse_file;
+	fuse_file *children[256];
+};
 
 fuse_file root = {.nlink = 2, .mode = S_IFDIR | 0755, .path = "/"};
 
