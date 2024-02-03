@@ -30,6 +30,7 @@
 #include <assert.h>
 
 #include "data_structures.h"
+#include "utils.h"
 
 /*
  * Command line options
@@ -67,17 +68,30 @@ static void *hello_init(struct fuse_conn_info *conn,
 static int hello_getattr(const char *path, struct stat *stbuf,
 			 struct fuse_file_info *fi)
 {
-	(void) fi; // Suppress -Wextra unused parameter warning
+	(void) fi;
 	int res = 0;
 
 	node *ret = get_node_from_path(path, root);
 
-	if (ret == 0)
+	fuse_log(FUSE_LOG_INFO, "getattr requested %s: %s\n", path, node_to_string(ret));
+
+	if (ret == NULL)
 		return -ENOENT;
 
 	memset(stbuf, 0, sizeof(struct stat));
+
 	stbuf->st_mode = ret->info.st_mode;
-	//stbuf->st_nlink = root.info.st_nlink;
+	//stbuf->st_nlink = ret->info.st_nlink;
+
+	/*if (strcmp(path, "/") == 0) {
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+	} else if (strcmp(path+1, "hello") == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+		stbuf->st_size = strlen("h");
+	} else
+		res = -ENOENT;*/
 
 	return res;
 }
@@ -90,23 +104,35 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) fi;
 	(void) flags;
 
-	if (strcmp(path, root->path) == 0) {
-		filler(buf, "/a", NULL, 0, 0);
-	} else {
+	node *ret = get_node_from_path(path, root);
+
+	if (ret == NULL)
 		return -ENOENT;
-	}
+
+	if (!S_ISDIR(ret->info.st_mode))
+		return -ENOENT;
+
+	//if (strcmp(path, "/") != 0)
+		//return -ENOENT;
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
+
+	fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
+
+	int i = 0;
+	while (ret->children[i] != NULL) {
+		filler(buf, basename(ret->children[i]->path), NULL, 0, 0);
+		i++;
+	}
+	//filler(buf, "hello", NULL, 0, 0);
 
 	return 0;
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-	(void)path;
-	//if ( (strcmp(path+1, options.filename) != 0) &&
-	//		(strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) != 0) )
+	if (strcmp(path+1, "hello") != 0)
 		return -ENOENT;
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -118,24 +144,16 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
-	(void)path;
 	size_t len;
 	(void) fi;
-
-	const char *contents;
-
-	/*if(strcmp(path+1, options.filename) == 0)
-		contents = options.contents;
-	else if (strcmp(path, "/" DIR_NAME "/" DIR_CHILD_NAME) == 0)
-		contents = DIR_CHILD_CONTENTS;
-	else*/
+	if(strcmp(path+1, "hello") != 0)
 		return -ENOENT;
 
-	len = strlen(contents);
-	if (offset < (long)len) {
+	len = strlen("h");
+	if (offset < len) {
 		if (offset + size > len)
 			size = len - offset;
-		memcpy(buf, contents + offset, size);
+		memcpy(buf, "h" + offset, size);
 	} else
 		size = 0;
 
@@ -162,12 +180,14 @@ static void show_help(const char *progname)
 }
 
 int main(int argc, char *argv[])
-{	
+{
 	root = create_node("/", S_IFDIR, 0755);
 
-	node *a = create_node("/a", S_IFREG, 0644);
-
+	node *a = create_node("/a", S_IFDIR, 0755);
 	add_child(root, a);
+
+	node *b = create_node("/b", S_IFREG, 0644);
+	add_child(root, b);
 
 	int ret;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
@@ -176,7 +196,7 @@ int main(int argc, char *argv[])
 	   fuse_opt_parse can free the defaults if other
 	   values are specified */
 	options.filename = strdup("hello");
-	options.contents = strdup("Hello W!\n");
+	options.contents = strdup("Hello World!\n");
 
 	/* Parse options */
 	if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
@@ -193,7 +213,9 @@ int main(int argc, char *argv[])
 		args.argv[0][0] = '\0';
 	}
 
-	ret = fuse_main(args.argc, args.argv, &hello_oper, NULL); // Calls clone() to daemonize itself
+	assert(fuse_opt_add_arg(&args, "-f") == 0);
+
+	ret = fuse_main(args.argc, args.argv, &hello_oper, NULL);
 	fuse_opt_free_args(&args);
 	return ret;
 }

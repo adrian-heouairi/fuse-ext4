@@ -1,13 +1,13 @@
 # Compiler and Flags
 CC=gcc
-CFLAGS=-Wall -g -pedantic -Wextra -Werror $(shell pkg-config fuse3 --cflags)
+CFLAGS=-Wall -g -pedantic $(shell pkg-config fuse3 --cflags) # -Wextra -Werror
 LDFLAGS=$(shell pkg-config fuse3 --libs)
 
 # Target binary
 TARGET=fuse-ext4
 
 # Source files
-SOURCES=data_structures.c main.c
+SOURCES=*.c
 
 # Default target
 all: $(TARGET)

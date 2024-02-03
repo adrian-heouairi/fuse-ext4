@@ -1,9 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "data_structures.h"
 
-#define DEFAULT_NB_CHILDREN 256
+#define DEFAULT_MAX_NB_CHILDREN 256
 
 // node *home_made_mkdir(const char *path, mode_t mode);
 // node *get_entry(const char *path);
@@ -13,22 +14,23 @@
 // map_entry *entries;
 
 node *create_node(const char *path, int file_type, int permissions) {
-    node *ret = malloc(sizeof(node) + DEFAULT_NB_CHILDREN - 1);
-    memset(ret, 0, sizeof(node) + DEFAULT_NB_CHILDREN - 1);
+    int struct_size = sizeof(node) + DEFAULT_MAX_NB_CHILDREN * sizeof(node *);
+
+    node *ret = malloc(struct_size);
+    memset(ret, 0, struct_size);
     strcpy(ret->path, path);
     ret->info.st_mode = file_type | permissions;
     ret->nb_children = 0;
-    ret->max_nb_children = 256;
+    ret->max_nb_children = DEFAULT_MAX_NB_CHILDREN;
 
     return ret;
 }
 
 void add_child(node *parent, node *child) {
     int i = 0;
-    while (parent->children + i != 0) i++;
+    while (parent->children[i] != NULL) i++;
 
-    node *new_child_pos = parent->children + i;
-    new_child_pos = child;
+    parent->children[i] = child;
 
     parent->nb_children++;
 }
@@ -38,11 +40,30 @@ node *get_node_from_path(const char *path, node *current) {
         return current;
 
     for (int i = 0; i < current->nb_children; i++) {
-        node *ret = get_node_from_path(path, current->children + i);
+        node *ret = get_node_from_path(path, current->children[i]);
 
-        if (ret != 0)
+        if (ret != NULL)
             return ret;
     }
 
-    return 0;
+    return NULL;
+}
+
+// You must do free on the returned value
+const char *node_to_string(const node *n) {
+    char *ret = malloc(8192 * sizeof(char));
+
+    if (n == NULL) {
+        sprintf(ret, "Node is NULL");
+        return ret;
+    }
+
+    sprintf(ret, "path: %s ", n->path);
+    sprintf(ret + strlen(ret), "nb_children: %d ", n->nb_children);
+    sprintf(ret + strlen(ret), "max_nb_children: %d ", n->max_nb_children);
+    for (int i = 0; i < 3; i++) {
+        sprintf(ret + strlen(ret), "child %d: %p ", i, (void *)n->children[i]);
+    }
+
+    return ret;
 }
