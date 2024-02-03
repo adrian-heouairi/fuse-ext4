@@ -20,6 +20,7 @@
 
 
 #define FUSE_USE_VERSION 31
+#define PERMISSION_MASK 4095
 
 #include <fuse.h>
 #include <stdio.h>
@@ -45,6 +46,14 @@ static struct options {
 	int show_help;
 } options;
 
+node *root;
+
+int create_file(const char *path, mode_t mode, dev_t dev) {
+  node *n = create_node(path, mode & S_IFMT, mode & PERMISSION_MASK);
+  // TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
+  add_child(root, n);
+  return 0;
+}
 #define OPTION(t, p)                           \
     { t, offsetof(struct options, p), 1 }
 static const struct fuse_opt option_spec[] = {
@@ -55,7 +64,6 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-node *root;
 
 static void *hello_init(struct fuse_conn_info *conn,
 			struct fuse_config *cfg)
@@ -164,8 +172,9 @@ static const struct fuse_operations hello_oper = {
 	.init           = hello_init,
 	.getattr	= hello_getattr,
 	.readdir	= hello_readdir,
-	.open		= hello_open,
-	.read		= hello_read,
+	.open		  = hello_open,
+	.read		  = hello_read,
+  .mknod    = create_file 
 };
 
 static void show_help(const char *progname)

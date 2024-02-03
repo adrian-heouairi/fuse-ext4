@@ -14,6 +14,9 @@ struct node {
 
 node *create_node(const char *path, int file_type, int permissions);
 
+int create_file(const char *path, mode_t mode, dev_t dev);
+//int create_directory(const char *path, mode_t mode);
+
 void add_child(node *parent, node *child);
 
 node *get_node_from_path(const char *path, node *current);
@@ -60,5 +63,6 @@ const char *node_to_string(const node *n);
  * Sets errno consequently.
  * */
 // int rm_entry(node* node);
+
 
 #endif // !DATA_STRUCTURES

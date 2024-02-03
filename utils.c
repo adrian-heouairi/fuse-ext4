@@ -3,8 +3,7 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdarg.h>
-
+#include <string.h>
 char *basename(char *path) {
     char *last_slash = strrchr(path, '/');
     if (last_slash == NULL) {

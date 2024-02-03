@@ -13,6 +13,7 @@
 
 // map_entry *entries;
 
+//int create_directory(const char *path, mode_t mode);
 node *create_node(const char *path, int file_type, int permissions) {
     int struct_size = sizeof(node) + DEFAULT_MAX_NB_CHILDREN * sizeof(node *);
 
