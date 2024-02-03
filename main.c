@@ -48,12 +48,19 @@ static struct options {
 
 node *root;
 
-int create_file(const char *path, mode_t mode, dev_t dev) {
-  node *n = create_node(path, mode & S_IFMT, mode & PERMISSION_MASK);
-  // TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
-  add_child(root, n);
-  return 0;
+int hello_mknod(const char *path, mode_t mode, dev_t dev) {
+	fuse_log(FUSE_LOG_INFO, "mknod started\n");
+
+	//node *n = create_node(path, mode & S_IFMT, mode & PERMISSION_MASK);
+	node *n = create_node(path, S_IFREG, 0777);
+	// TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
+	add_child(root, n);
+
+	fuse_log(FUSE_LOG_INFO, "mknod ended\n");
+
+	return 0;
 }
+
 #define OPTION(t, p)                           \
     { t, offsetof(struct options, p), 1 }
 static const struct fuse_opt option_spec[] = {
@@ -76,6 +83,8 @@ static void *hello_init(struct fuse_conn_info *conn,
 static int hello_getattr(const char *path, struct stat *stbuf,
 			 struct fuse_file_info *fi)
 {
+	fuse_log(FUSE_LOG_INFO, "getattr started with path = %s\n", path);
+
 	(void) fi;
 	int res = 0;
 
@@ -174,7 +183,7 @@ static const struct fuse_operations hello_oper = {
 	.readdir	= hello_readdir,
 	.open		  = hello_open,
 	.read		  = hello_read,
-  .mknod    = create_file 
+  .mknod    = hello_mknod
 };
 
 static void show_help(const char *progname)

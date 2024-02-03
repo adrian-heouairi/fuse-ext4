@@ -7,7 +7,7 @@ LDFLAGS=$(shell pkg-config fuse3 --libs)
 TARGET=fuse-ext4
 
 # Source files
-SOURCES=*.c
+SOURCES=data_structures.c main.c utils.c
 
 # Default target
 all: $(TARGET)

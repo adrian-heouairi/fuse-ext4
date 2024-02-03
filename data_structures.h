@@ -14,7 +14,7 @@ struct node {
 
 node *create_node(const char *path, int file_type, int permissions);
 
-int create_file(const char *path, mode_t mode, dev_t dev);
+//int create_file(const char *path, mode_t mode, dev_t dev);
 //int create_directory(const char *path, mode_t mode);
 
 void add_child(node *parent, node *child);
