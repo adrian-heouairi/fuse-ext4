@@ -1,26 +1,4 @@
-/*
-  FUSE: Filesystem in Userspace
-  Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
-
-  This program can be distributed under the terms of the GNU GPLv2.
-  See the file COPYING.
-*/
-
-/** @file
- *
- * minimal example filesystem using high-level API
- *
- * Compile with:
- *
- *     gcc -Wall hello.c `pkg-config fuse3 --cflags --libs` -o hello
- *
- * ## Source code ##
- * \include hello.c
- */
-
-
 #define FUSE_USE_VERSION 31
-#define PERMISSION_MASK 4095
 
 #include <fuse.h>
 #include <stdio.h>
@@ -41,14 +19,14 @@
  * different values on the command line.
  */
 static struct options {
-	const char *filename;
-	const char *contents;
+	// const char *filename;
+	// const char *contents;
 	int show_help;
 } options;
 
 node *root;
 
-int hello_mknod(const char *path, mode_t mode, dev_t dev) {
+int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
 
 	//node *n = create_node(path, mode & S_IFMT, mode & PERMISSION_MASK);
@@ -63,16 +41,17 @@ int hello_mknod(const char *path, mode_t mode, dev_t dev) {
 
 #define OPTION(t, p)                           \
     { t, offsetof(struct options, p), 1 }
+
 static const struct fuse_opt option_spec[] = {
-	OPTION("--name=%s", filename),
-	OPTION("--contents=%s", contents),
+	//OPTION("--name=%s", filename),
+	//OPTION("--contents=%s", contents),
 	OPTION("-h", show_help),
 	OPTION("--help", show_help),
 	FUSE_OPT_END
 };
 
 
-static void *hello_init(struct fuse_conn_info *conn,
+static void *fe4_init(struct fuse_conn_info *conn,
 			struct fuse_config *cfg)
 {
 	(void) conn;
@@ -80,7 +59,7 @@ static void *hello_init(struct fuse_conn_info *conn,
 	return NULL;
 }
 
-static int hello_getattr(const char *path, struct stat *stbuf,
+static int fe4_getattr(const char *path, struct stat *stbuf,
 			 struct fuse_file_info *fi)
 {
 	fuse_log(FUSE_LOG_INFO, "getattr started with path = %s\n", path);
@@ -113,7 +92,7 @@ static int hello_getattr(const char *path, struct stat *stbuf,
 	return res;
 }
 
-static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi,
 			 enum fuse_readdir_flags flags)
 {
@@ -147,7 +126,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
-static int hello_open(const char *path, struct fuse_file_info *fi)
+static int fe4_open(const char *path, struct fuse_file_info *fi)
 {
 	if (strcmp(path+1, "hello") != 0)
 		return -ENOENT;
@@ -158,7 +137,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
-static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
 	size_t len;
@@ -177,23 +156,20 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 	return size;
 }
 
-static const struct fuse_operations hello_oper = {
-	.init           = hello_init,
-	.getattr	= hello_getattr,
-	.readdir	= hello_readdir,
-	.open		  = hello_open,
-	.read		  = hello_read,
-  .mknod    = hello_mknod
+static const struct fuse_operations fe4_oper = {
+	.init           = fe4_init,
+	.getattr	= fe4_getattr,
+	.readdir	= fe4_readdir,
+	.open		  = fe4_open,
+	.read		  = fe4_read,
+  .mknod    = fe4_mknod
 };
 
 static void show_help(const char *progname)
 {
 	printf("usage: %s [options] <mountpoint>\n\n", progname);
 	printf("File-system specific options:\n"
-	       "    --name=<s>          Name of the \"hello\" file\n"
-	       "                        (default: \"hello\")\n"
-	       "    --contents=<s>      Contents \"hello\" file\n"
-	       "                        (default \"Hello, World!\\n\")\n"
+	       "    -h --help\n"
 	       "\n");
 }
 
@@ -213,8 +189,8 @@ int main(int argc, char *argv[])
 	/* Set defaults -- we have to use strdup so that
 	   fuse_opt_parse can free the defaults if other
 	   values are specified */
-	options.filename = strdup("hello");
-	options.contents = strdup("Hello World!\n");
+	//options.filename = strdup("hello");
+	//options.contents = strdup("Hello World!\n");
 
 	/* Parse options */
 	if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
@@ -233,7 +209,7 @@ int main(int argc, char *argv[])
 
 	assert(fuse_opt_add_arg(&args, "-f") == 0);
 
-	ret = fuse_main(args.argc, args.argv, &hello_oper, NULL);
+	ret = fuse_main(args.argc, args.argv, &fe4_oper, NULL);
 	fuse_opt_free_args(&args);
 	return ret;
 }
