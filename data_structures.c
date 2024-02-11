@@ -6,14 +6,6 @@
 
 #define DEFAULT_MAX_NB_CHILDREN 256
 
-// node *home_made_mkdir(const char *path, mode_t mode);
-// node *get_entry(const char *path);
-// int add_entry(const node* node);
-// int rm_entry(node* node);
-
-// map_entry *entries;
-
-//int create_directory(const char *path, mode_t mode);
 node *create_node(const char *path, int file_type, int permissions) {
     int struct_size = sizeof(node) + DEFAULT_MAX_NB_CHILDREN * sizeof(node *);
 

@@ -19,8 +19,6 @@
  * different values on the command line.
  */
 static struct options {
-	// const char *filename;
-	// const char *contents;
 	int show_help;
 } options;
 
@@ -29,7 +27,6 @@ node *root;
 int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
 
-	//node *n = create_node(path, mode & S_IFMT, mode & PERMISSION_MASK);
 	node *n = create_node(path, S_IFREG, 0777);
 	// TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
 	add_child(root, n);
@@ -43,8 +40,6 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
     { t, offsetof(struct options, p), 1 }
 
 static const struct fuse_opt option_spec[] = {
-	//OPTION("--name=%s", filename),
-	//OPTION("--contents=%s", contents),
 	OPTION("-h", show_help),
 	OPTION("--help", show_help),
 	FUSE_OPT_END
@@ -77,17 +72,6 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 	memset(stbuf, 0, sizeof(struct stat));
 
 	stbuf->st_mode = ret->info.st_mode;
-	//stbuf->st_nlink = ret->info.st_nlink;
-
-	/*if (strcmp(path, "/") == 0) {
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path+1, "hello") == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen("h");
-	} else
-		res = -ENOENT;*/
 
 	return res;
 }
@@ -108,9 +92,6 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	if (!S_ISDIR(ret->info.st_mode))
 		return -ENOENT;
 
-	//if (strcmp(path, "/") != 0)
-		//return -ENOENT;
-
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
 
@@ -121,7 +102,6 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		filler(buf, basename(ret->children[i]->path), NULL, 0, 0);
 		i++;
 	}
-	//filler(buf, "hello", NULL, 0, 0);
 
 	return 0;
 }
@@ -185,12 +165,6 @@ int main(int argc, char *argv[])
 
 	int ret;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-
-	/* Set defaults -- we have to use strdup so that
-	   fuse_opt_parse can free the defaults if other
-	   values are specified */
-	//options.filename = strdup("hello");
-	//options.contents = strdup("Hello World!\n");
 
 	/* Parse options */
 	if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
