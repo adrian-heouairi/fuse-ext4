@@ -4,46 +4,8 @@
 
 #include "data_structures.h"
 
-#define DEFAULT_MAX_NB_CHILDREN 256
-
-node *create_node(const char *path, int file_type, int permissions) {
-    int struct_size = sizeof(node) + DEFAULT_MAX_NB_CHILDREN * sizeof(node *);
-
-    node *ret = malloc(struct_size);
-    memset(ret, 0, struct_size);
-    strcpy(ret->path, path);
-    ret->info.st_mode = file_type | permissions;
-    ret->nb_children = 0;
-    ret->max_nb_children = DEFAULT_MAX_NB_CHILDREN;
-
-    return ret;
-}
-
-void add_child(node *parent, node *child) {
-    int i = 0;
-    while (parent->children[i] != NULL) i++;
-
-    parent->children[i] = child;
-
-    parent->nb_children++;
-}
-
-node *get_node_from_path(const char *path, node *current) {
-    if (strcmp(path, current->path) == 0)
-        return current;
-
-    for (int i = 0; i < current->nb_children; i++) {
-        node *ret = get_node_from_path(path, current->children[i]);
-
-        if (ret != NULL)
-            return ret;
-    }
-
-    return NULL;
-}
-
 // You must do free on the returned value
-const char *node_to_string(const node *n) {
+/*const char *node_to_string(const node *n) {
     char *ret = malloc(8192 * sizeof(char));
 
     if (n == NULL) {
@@ -59,4 +21,60 @@ const char *node_to_string(const node *n) {
     }
 
     return ret;
+}*/
+
+fe4_inode inodes[256];
+
+void init_inodes() {
+    inodes[0].stat.st_mode = S_IFDIR | 0777;
+    // Size is already 0
+
+    inodes[1].stat.st_mode = S_IFDIR | 0777;
+
+    fe4_dirent de = {.filename = "a", .inode_number = 1};
+    inodes[0].stat.st_size = sizeof(fe4_dirent);
+    memcpy(inodes[0].contents, &de, sizeof(fe4_dirent));
+}
+
+ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset) {
+    off_t len = inode->stat.st_size;
+	if (offset < len) {
+		if (offset + count > len)
+			count = len - offset;
+        memcpy(buf, inode->contents + offset, count);
+	} else
+		count = 0;
+
+	return count;
+}
+
+int get_inode_from_path_rec(const char *path, fe4_inode *ret, fe4_inode *current_root_inode) {
+    if (strcmp(path, "/") == 0) {
+        memcpy(ret, current_root_inode, sizeof(fe4_inode));
+        return 0;
+    }
+
+    return -1;
+}
+
+// Return 0 on success, -1 on error
+int get_inode_from_path(const char *path, fe4_inode *ret) {
+    return get_inode_from_path_rec(path, ret, &inodes[0]);
+}
+
+int get_nb_children(const fe4_inode *inode) {
+    if (!S_ISDIR(inode->stat.st_mode))
+        return -1;
+
+    return inode->stat.st_size / sizeof(fe4_dirent);
+}
+
+int get_dirent_at(const fe4_inode *parent, int index, fe4_dirent *ret) {
+    read_inode(parent, ret, sizeof(fe4_dirent), index * sizeof(fe4_dirent));
+
+    return 0;
+}
+
+int get_inode_at(int index, fe4_inode *ret) {
+
 }

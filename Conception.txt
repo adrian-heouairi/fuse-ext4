@@ -1,0 +1,31 @@
+static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+			 off_t offset, struct fuse_file_info *fi,
+			 enum fuse_readdir_flags flags)
+
+fe4_readdir {
+    inode = get_inode_from_path(path)
+    while readdir {
+        ajouter filename du fils à ret
+    }
+    return ret
+}
+
+// Returns 0 on success
+// Must work with path == /
+int get_inode_from_path(const char *path, fe4_inode *ret, int current_root_inode);
+
+get_inode_from_path(const char *path, fe4_inode *ret, int current_root_inode) {
+    if path == / return inodes[current_root_inode]
+
+    while fils = readdir(inodes[current_root_inode]) {
+        if fils.filename == 1er elem du path (pour /abc, abc) {
+            if 1er elem du path est aussi le dernier {
+                return fils.inode
+            } else {
+                return get_inode_from_path(path + x, ret, fils.inode)
+            }
+        }
+    }
+
+    return -1
+}

@@ -22,9 +22,9 @@ static struct options {
 	int show_help;
 } options;
 
-node *root;
+//node *root;
 
-int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
+/*int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
 
 	node *n = create_node(path, S_IFREG, 0777);
@@ -34,7 +34,7 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod ended\n");
 
 	return 0;
-}
+}*/
 
 #define OPTION(t, p)                           \
     { t, offsetof(struct options, p), 1 }
@@ -47,67 +47,64 @@ static const struct fuse_opt option_spec[] = {
 
 
 static void *fe4_init(struct fuse_conn_info *conn,
-			struct fuse_config *cfg)
-{
+			struct fuse_config *cfg) {
 	(void) conn;
 	cfg->kernel_cache = 1;
 	return NULL;
 }
 
 static int fe4_getattr(const char *path, struct stat *stbuf,
-			 struct fuse_file_info *fi)
-{
+			 struct fuse_file_info *fi) {
 	fuse_log(FUSE_LOG_INFO, "getattr started with path = %s\n", path);
 
 	(void) fi;
-	int res = 0;
 
-	node *ret = get_node_from_path(path, root);
+	fe4_inode in;
+	int r = get_inode_from_path(path, &in);
 
-	fuse_log(FUSE_LOG_INFO, "getattr requested %s: %s\n", path, node_to_string(ret));
+	//fuse_log(FUSE_LOG_INFO, "getattr requested %s: %\n", path, node_to_string(ret));
 
-	if (ret == NULL)
+	if (r == -1)
 		return -ENOENT;
 
 	memset(stbuf, 0, sizeof(struct stat));
 
-	stbuf->st_mode = ret->info.st_mode;
+	stbuf->st_mode = in.stat.st_mode;
 
-	return res;
+	return 0;
 }
 
 static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi,
-			 enum fuse_readdir_flags flags)
-{
+			 enum fuse_readdir_flags flags) {
 	(void) offset;
 	(void) fi;
 	(void) flags;
 
-	node *ret = get_node_from_path(path, root);
+	fe4_inode in;
+	int r = get_inode_from_path(path, &in);
 
-	if (ret == NULL)
+	if (r == -1)
 		return -ENOENT;
 
-	if (!S_ISDIR(ret->info.st_mode))
+	if (!S_ISDIR(in.stat.st_mode))
 		return -ENOENT;
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
 
-	fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
+	//fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
 
-	int i = 0;
+	/*int i = 0;
 	while (ret->children[i] != NULL) {
 		filler(buf, basename(ret->children[i]->path), NULL, 0, 0);
 		i++;
-	}
+	}*/
 
 	return 0;
 }
 
-static int fe4_open(const char *path, struct fuse_file_info *fi)
-{
+/*static int fe4_open(const char *path, struct fuse_file_info *fi) {
 	if (strcmp(path+1, "hello") != 0)
 		return -ENOENT;
 
@@ -118,8 +115,7 @@ static int fe4_open(const char *path, struct fuse_file_info *fi)
 }
 
 static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
-		      struct fuse_file_info *fi)
-{
+		      struct fuse_file_info *fi) {
 	size_t len;
 	(void) fi;
 	if(strcmp(path+1, "hello") != 0)
@@ -134,34 +130,30 @@ static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 		size = 0;
 
 	return size;
-}
+}*/
 
 static const struct fuse_operations fe4_oper = {
 	.init           = fe4_init,
 	.getattr	= fe4_getattr,
 	.readdir	= fe4_readdir,
-	.open		  = fe4_open,
-	.read		  = fe4_read,
-  .mknod    = fe4_mknod
+	//.open		  = fe4_open,
+	//.read		  = fe4_read,
+  //.mknod    = fe4_mknod
 };
 
-static void show_help(const char *progname)
-{
+static void show_help(const char *progname) {
 	printf("usage: %s [options] <mountpoint>\n\n", progname);
 	printf("File-system specific options:\n"
 	       "    -h --help\n"
 	       "\n");
 }
 
-int main(int argc, char *argv[])
-{
-	root = create_node("/", S_IFDIR, 0755);
+int main(int argc, char *argv[]) {
+	init_inodes();
 
-	node *a = create_node("/a", S_IFDIR, 0755);
-	add_child(root, a);
 
-	node *b = create_node("/b", S_IFREG, 0644);
-	add_child(root, b);
+
+
 
 	int ret;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
