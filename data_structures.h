@@ -31,4 +31,6 @@ int get_dirent_at(const fe4_inode *parent, int index, fe4_dirent *ret);
 
 int get_inode_at(int index, fe4_inode *ret);
 
+fe4_inode *get_next_free_inode();
+
 #endif // !DATA_STRUCTURES

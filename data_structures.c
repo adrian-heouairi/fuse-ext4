@@ -28,11 +28,20 @@ fe4_inode inodes[256];
 // For now, should set: st_ino st_uid st_gid --- st_mode st_nlink st_size
 // Dirents should have . and .. as first two entries (manually added)
 void init_inodes() {
+    for (int i = 0; i < 256; i++) {
+        inodes[i].stat.st_ino = i;
+        inodes[i].stat.st_uid = getuid();
+        inodes[i].stat.st_gid = getgid();
+        inodes[i].stat.st_size = -1; // -1 for unused
+
+        inodes[i].stat.st_mode = 0755;
+    }
+
     //mode_t umask_arg = umask(022);
     //umask(umask_arg);
     //inodes[ROOT_INODE].stat.st_mode = S_IFDIR | ~umask_arg;
 
-    inodes[ROOT_INODE].stat.st_mode = S_IFDIR;
+    inodes[ROOT_INODE].stat.st_mode |= S_IFDIR;
     inodes[ROOT_INODE].stat.st_nlink = 2;
     inodes[ROOT_INODE].stat.st_size = 3  * sizeof(fe4_dirent);
     fe4_dirent parent = {.filename = "..", .inode_number = ROOT_INODE};
@@ -42,20 +51,11 @@ void init_inodes() {
     memcpy(inodes[ROOT_INODE].contents + sizeof(fe4_dirent), &current, sizeof(fe4_dirent));
     memcpy(inodes[ROOT_INODE].contents + 2 * sizeof(fe4_dirent), &de, sizeof(fe4_dirent));
     
-    inodes[1].stat.st_mode = S_IFREG;
+    inodes[1].stat.st_mode |= S_IFREG;
     inodes[1].stat.st_nlink = 2;
     inodes[1].stat.st_size = 2;
     inodes[1].contents[0] = 'a';
     inodes[1].contents[1] = 'b';
-
-    for (int i = 0; i < 256; i++) {
-        inodes[i].stat.st_ino = i;
-        inodes[i].stat.st_uid = getuid();
-        inodes[i].stat.st_gid = getgid();
-        //inodes[i].stat.st_size = -1; // -1 for unused
-
-        inodes[i].stat.st_mode |= 0755;
-    }
 }
 
 ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset) {
@@ -131,4 +131,14 @@ int get_inode_at(int index, fe4_inode *ret) {
     memcpy(ret, &inodes[index], sizeof(fe4_inode));
 
     return 0;
+}
+
+fe4_inode *get_next_free_inode() {
+    for (int i = 0; i < 256; i++) {
+        if (inodes[i].stat.st_size == -1) {
+            return &inodes[i];
+        }
+    }
+
+    return NULL;
 }

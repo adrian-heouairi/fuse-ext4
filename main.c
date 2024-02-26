@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <assert.h>
+#include <libgen.h>
 
 #include "data_structures.h"
 #include "utils.h"
@@ -22,17 +23,43 @@ static struct options {
 	int show_help;
 } options;
 
-/*int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
+int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
 
-	node *n = create_node(path, S_IFREG, 0777);
-	// TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
-	add_child(root, n);
+	fe4_inode in;
+	int r = get_inode_from_path(path, &in);
+	if (r == -1) {
+		fe4_inode *next_inode = get_next_free_inode();
+		if (next_inode == NULL) {
+			fuse_log(FUSE_LOG_ERR, "No more inodes available\n");
+			return -ENOSPC;
+		}
+		next_inode->stat.st_mode = mode;
+		next_inode->stat.st_dev = dev;
+		next_inode->stat.st_nlink = 1;
+		next_inode->stat.st_uid = getuid();
+		next_inode->stat.st_gid = getgid();
+		fe4_inode *parent;
+		int res = get_inode_from_path(dirname(path),parent);
+		if (res == -1) {
+			fuse_log(FUSE_LOG_ERR, "No parent found\n");
+			return -ENOENT;
+		} else if (!S_ISDIR(parent->stat.st_mode)) {
+			fuse_log(FUSE_LOG_ERR, "Parent is not a directory\n");
+			return -ENOTDIR;
+		} else {
+			fe4_dirent de = {.filename = basename(path), .inode_number = next_inode->stat.st_ino};
+			memcpy(parent->contents + parent->stat.st_size, &de, sizeof(fe4_dirent));
+			parent->stat.st_size += sizeof(fe4_dirent);
+		}
 
+	}
+	// TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
+	// TODO: make sure that time is updated when we implement it
 	fuse_log(FUSE_LOG_INFO, "mknod ended\n");
 
 	return 0;
-}*/
+}
 
 #define OPTION(t, p)                           \
     { t, offsetof(struct options, p), 1 }
@@ -152,7 +179,7 @@ static const struct fuse_operations fe4_oper = {
 	.readdir	= fe4_readdir,
 	.open		  = fe4_open,
 	.read		  = fe4_read,
-  //.mknod    = fe4_mknod
+  	.mknod    = fe4_mknod
 };
 
 static void show_help(const char *progname) {

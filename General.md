@@ -1,7 +1,17 @@
 mettre les dirent . et .. qui existent vraiment dans ext, mettre nlink
 trous dans les dirent
+TODO : + Implemnet chmod
+       + Implment mkdir
 
-
+int fe4_mknod(const char *path, mode_t mode, dev_t dev)
+int (*mkdir) (const char *, mode_t);
+int (*unlink) (const char *);
+int (*rmdir) (const char *);
+int (*rename) (const char *, const char *, unsigned int);
+int (*chmod) (const char *, mode_t);
+int (*chown) (const char *, uid_t, gid_t);
+int (*write) (const char *, const char *, size_t, off_t, struct fuse_file_info *);
+int (*truncate) (const char *, off_t);
 
 
 
