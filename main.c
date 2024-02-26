@@ -59,7 +59,7 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 
 	(void) fi;
 
-	fe4_inode in;
+	fe4_inode in; // We avoid managing memory ourselves that's why this is in the stack
 	int r = get_inode_from_path(path, &in);
 
 	//fuse_log(FUSE_LOG_INFO, "getattr requested %s: %\n", path, node_to_string(ret));
@@ -67,9 +67,9 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 	if (r == -1)
 		return -ENOENT;
 
-	memset(stbuf, 0, sizeof(struct stat));
-
-	stbuf->st_mode = in.stat.st_mode;
+	//memset(stbuf, 0, sizeof(struct stat));
+	//stbuf->st_mode = in.stat.st_mode;
+    *stbuf = in.stat;
 
 	return 0;
 }
