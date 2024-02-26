@@ -48,18 +48,109 @@ ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset
 	return count;
 }
 
-int get_inode_from_path_rec(const char *path, fe4_inode *ret, fe4_inode *current_root_inode) {
+// int get_inode_from_path_rec(const char *path, char *tmp_path,fe4_inode *ret, fe4_inode *current_root_inode) {
+//     // tmp_path = "/"
+//     // path que je cherche strtok coupe par rapport a "/"
+//     // path que je cherche  premier token cheeche dans les fils de tmp_path puis virer ce token
+
+//     if (strcmp(path, "/") == 0) {
+//         memcpy(ret, current_root_inode, sizeof(fe4_inode));
+//         return 0;
+//     }
+
+//     return -1;
+// }
+
+// Return 0 on success, -1 on error
+// int get_inode_from_paths(const char *path, fe4_inode *ret) {
+//     // if path == "/" return inodes[0]
+//     char *tokens = strtok(path, "/");
+//     char *tmp_path = malloc(256 * sizeof(char));
+//     int j = 0;
+//     while (tokens = strtok(NULL, "/") != NULL)
+//     {
+//         strcat(tmp_path, "/");
+//         fe4_dirent currnt_dirent;
+//         for (size_t i = 0; i < get_nb_children(&inodes[j]); i++)
+//         {
+//             int r = get_dirent_at(&inodes[j], i, &currnt_dirent);
+//             if (currnt_dirent.filename == tokens)
+//             {
+//                 ret = &currnt_dirent;
+//                 strcat(tmp_path, tokens);
+//             }
+//             else
+//             {
+//                 continue;
+//             }
+//         }
+//     }
+//     free(tmp_path);
+//     return 0;
+// }
+
+    // if path ne start pas par / return -1
+    // if path == / return inodes[0]
+
+    // parent = inode de / = inodes[0]
+    // child = strtok(path, "/") e.g. a dans /a/b/c
+    // next = strtok(path, "/") e.g. b dans /a/b/c
+
+    // while (1) {
+    //     for i in 0..get_nb_children(parent) {
+    //         if child == get_dirent_at(parent, i).filename {
+    //             if next == null: return child
+    //             parent = inode de child
+    //             child = next
+    //             next = strtok(NULL, "/")
+    //             break
+    //         }
+    //     }
+    //     return -1
+    // }
+
+int get_inode_from_path(const char *path, fe4_inode *ret) {
+    // We assume that path is a valid string
+    if (strlen(path) == 0 || path[0] != '/')
+        return -1;
+    
     if (strcmp(path, "/") == 0) {
-        memcpy(ret, current_root_inode, sizeof(fe4_inode));
+        //memcpy(ret, &inodes[0], sizeof(fe4_inode));
+        get_inode_at(0, ret);
         return 0;
     }
 
-    return -1;
-}
+    // TODO Handle path == "//"
 
-// Return 0 on success, -1 on error
-int get_inode_from_path(const char *path, fe4_inode *ret) {
-    return get_inode_from_path_rec(path, ret, &inodes[0]);
+    char *path_copy = malloc(strlen(path) + 1);
+    strcpy(path_copy, path);
+
+    fe4_inode *parent = &inodes[0];
+    char *child = strtok(path_copy, "/");
+    char *grandchild = strtok(NULL, "/");
+
+    l:
+    for (int i = 0; i < get_nb_children(parent); i++) {
+        fe4_dirent dirent;
+        get_dirent_at(parent, i, &dirent);
+
+        if (strcmp(dirent.filename, child) == 0) {
+            if (grandchild == NULL) {
+                get_inode_at(dirent.inode_number, ret);
+                
+                free(path_copy);
+                return 0;
+            }
+
+            get_inode_at(dirent.inode_number, parent);
+            child = grandchild;
+            grandchild = strtok(NULL, "/");
+            goto l;
+        }
+    }
+
+    free(path_copy);
+    return -1;
 }
 
 int get_nb_children(const fe4_inode *inode) {
@@ -76,5 +167,7 @@ int get_dirent_at(const fe4_inode *parent, int index, fe4_dirent *ret) {
 }
 
 int get_inode_at(int index, fe4_inode *ret) {
+    memcpy(ret, &inodes[index], sizeof(fe4_inode));
 
+    return 0;
 }

@@ -1,3 +1,26 @@
+retourner adresse de inode[0] au lieu de memcpy inode[0] dans ret
+mettre les dirent . et .. qui existent vraiment dans ext, mettre nlink
+trous dans les dirent
+dans le code fichiers a b c et toutes les opérations en read et open read
+un noeud est un dirent
+keep track of nlink
+
+TODO
+**static int fe4_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi)** // stat
+**static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi, enum fuse_readdir_flags flags)**
+static int fe4_open(const char *path, struct fuse_file_info *fi)
+static int fe4_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+
+
+
+
+
+
+
+
+
+
+```c
 static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi,
 			 enum fuse_readdir_flags flags)
@@ -29,3 +52,4 @@ get_inode_from_path(const char *path, fe4_inode *ret, int current_root_inode) {
 
     return -1
 }
+``` 

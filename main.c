@@ -22,8 +22,6 @@ static struct options {
 	int show_help;
 } options;
 
-//node *root;
-
 /*int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
 
@@ -89,9 +87,16 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	if (!S_ISDIR(in.stat.st_mode))
 		return -ENOENT;
+		
+	for (int i = 0; i < get_nb_children(&in); i++) {
+		fe4_dirent de;
+		get_dirent_at(&in, i, &de);
 
-	filler(buf, ".", NULL, 0, 0);
-	filler(buf, "..", NULL, 0, 0);
+		filler(buf, de.filename, NULL, 0, 0);
+	}
+
+	//filler(buf, ".", NULL, 0, 0);
+	//filler(buf, "..", NULL, 0, 0);
 
 	//fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
 
@@ -150,9 +155,6 @@ static void show_help(const char *progname) {
 
 int main(int argc, char *argv[]) {
 	init_inodes();
-
-
-
 
 
 	int ret;
