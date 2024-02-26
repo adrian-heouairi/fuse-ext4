@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define ROOT_INODE 0
+
 typedef struct fe4_inode fe4_inode;
 struct fe4_inode {
   struct stat stat;

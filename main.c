@@ -65,9 +65,7 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 	if (r == -1)
 		return -ENOENT;
 
-	//memset(stbuf, 0, sizeof(struct stat));
-	//stbuf->st_mode = in.stat.st_mode;
-    *stbuf = in.stat;
+	memcpy(stbuf, &in.stat, sizeof(struct stat));
 
 	return 0;
 }
@@ -95,22 +93,19 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		filler(buf, de.filename, NULL, 0, 0);
 	}
 
-	//filler(buf, ".", NULL, 0, 0);
-	//filler(buf, "..", NULL, 0, 0);
-
 	//fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
-
-	/*int i = 0;
-	while (ret->children[i] != NULL) {
-		filler(buf, basename(ret->children[i]->path), NULL, 0, 0);
-		i++;
-	}*/
 
 	return 0;
 }
 
-/*static int fe4_open(const char *path, struct fuse_file_info *fi) {
-	if (strcmp(path+1, "hello") != 0)
+static int fe4_open(const char *path, struct fuse_file_info *fi) {
+	fe4_inode in;
+	int r = get_inode_from_path(path, &in);
+
+	if (r == -1)
+		return -ENOENT;
+
+	if (!S_ISREG(in.stat.st_mode))
 		return -ENOENT;
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -119,7 +114,7 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
-static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
+/*static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi) {
 	size_t len;
 	(void) fi;
@@ -137,12 +132,26 @@ static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 	return size;
 }*/
 
+static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
+		      struct fuse_file_info *fi) {
+	fe4_inode in;
+	int r = get_inode_from_path(path, &in);
+
+	if (r == -1)
+		return -ENOENT;
+
+	if (!S_ISREG(in.stat.st_mode))
+		return -ENOENT;
+
+	return read_inode(&in, buf, size, offset);
+}
+
 static const struct fuse_operations fe4_oper = {
 	.init           = fe4_init,
 	.getattr	= fe4_getattr,
 	.readdir	= fe4_readdir,
-	//.open		  = fe4_open,
-	//.read		  = fe4_read,
+	.open		  = fe4_open,
+	.read		  = fe4_read,
   //.mknod    = fe4_mknod
 };
 
