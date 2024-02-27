@@ -6,6 +6,8 @@
 
 #define ROOT_INODE 0
 
+// An inode knows its own inode number (index) because of stat.st_ino
+// Doesn't contain filename
 typedef struct fe4_inode fe4_inode;
 struct fe4_inode {
   struct stat stat;
@@ -18,19 +20,20 @@ struct fe4_dirent {
   ino_t inode_number;
 };
 
+// These functions return pointers to an fe4_inode which you can modify to directly affect the filesystem
+
 void init_inodes();
+
+fe4_inode *get_new_inode(mode_t type);
 
 ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset);
 
-// Return 0 on success, -1 on error
-int get_inode_from_path(const char *path, fe4_inode *ret);
+fe4_inode *get_inode_from_path(const char *path);
 
 int get_nb_children(const fe4_inode *inode);
 
-int get_dirent_at(const fe4_inode *parent, int index, fe4_dirent *ret);
+fe4_dirent *get_dirent_at(const fe4_inode *parent, int index);
 
-int get_inode_at(int index, fe4_inode *ret);
-
-fe4_inode *get_next_free_inode();
+fe4_inode *get_inode_at(ino_t index);
 
 #endif // !DATA_STRUCTURES

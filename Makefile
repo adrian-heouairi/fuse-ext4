@@ -7,7 +7,7 @@ LDFLAGS=$(shell pkg-config fuse3 --libs)
 TARGET=fuse-ext4
 
 # Source files
-SOURCES=data_structures.c main.c utils.c
+SOURCES=data_structures.c main.c utils.c sprintstatf.c
 
 # Default target
 all: $(TARGET)
@@ -30,11 +30,13 @@ $(TARGET): deps $(SOURCES)
 # Target to run the program
 run: $(TARGET)
 	@mkdir -pv mntpt
-	fusermount -u mntpt || true
+	killall $(TARGET) || true
 	@./$(TARGET) mntpt
 
 # Clean target
 clean:
+	killall $(TARGET) || true
+	sleep 1
 	@rm -vf $(TARGET)
 	@echo "Cleaned."
 
