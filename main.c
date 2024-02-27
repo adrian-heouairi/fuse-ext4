@@ -2,6 +2,7 @@
 
 #include <fuse.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -25,9 +26,11 @@ static struct options {
 
 int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
-
+    char *path2 = malloc(strlen(path) +1);
+    strcpy(path2,path);
 	fe4_inode in;
 	int r = get_inode_from_path(path, &in);
+    fuse_log(FUSE_LOG_INFO, "after retriving inode\n");
 	if (r == -1) {
 		fe4_inode *next_inode = get_next_free_inode();
 		if (next_inode == NULL) {
@@ -39,18 +42,24 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 		next_inode->stat.st_nlink = 1;
 		next_inode->stat.st_uid = getuid();
 		next_inode->stat.st_gid = getgid();
-		fe4_inode *parent;
-		int res = get_inode_from_path(dirname(path),parent);
+        fuse_log(FUSE_LOG_INFO, "after filling inode\n");
+		fe4_inode parent;
+		int res = get_inode_from_path(dirname(path2),&parent);
+        fuse_log(FUSE_LOG_INFO, "GETTING PARENT INODE...");
 		if (res == -1) {
+            fuse_log(FUSE_LOG_INFO, "GETTING PARENT INODE FAILED");
 			fuse_log(FUSE_LOG_ERR, "No parent found\n");
 			return -ENOENT;
-		} else if (!S_ISDIR(parent->stat.st_mode)) {
+		} else if (!S_ISDIR(parent.stat.st_mode)) {
 			fuse_log(FUSE_LOG_ERR, "Parent is not a directory\n");
 			return -ENOTDIR;
 		} else {
-			fe4_dirent de = {.filename = basename(path), .inode_number = next_inode->stat.st_ino};
-			memcpy(parent->contents + parent->stat.st_size, &de, sizeof(fe4_dirent));
-			parent->stat.st_size += sizeof(fe4_dirent);
+			fe4_dirent de = {.inode_number = next_inode->stat.st_ino};
+            
+            memcpy(de.filename,basename(path2), strlen(basename(path2)));
+			memcpy(parent.contents + parent.stat.st_size, &de, sizeof(fe4_dirent));
+			parent.stat.st_size += sizeof(fe4_dirent);
+            fuse_log(FUSE_LOG_INFO, "after adding dirent to parent\n");
 		}
 
 	}
