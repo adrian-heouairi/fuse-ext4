@@ -68,7 +68,7 @@ static struct options {
 	fuse_log(FUSE_LOG_INFO, "mknod ended\n");
 
 	return 0;
-}
+}*/
 
 int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	if (!S_ISREG(mode)) {
@@ -76,36 +76,34 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 		return -EINVAL;
 	}
 
-	if (strcmp(path, "/") == 0) {
-		return -EEXIST;
-	}
+	fe4_inode *already_there = get_inode_from_path(path);
 
-	fe4_inode already_there;
-	int r = get_inode_from_path(path, &already_there);
-
-	if (r != -1)
+	if (already_there != NULL)
 		return -EEXIST;
 		
 	char *path_for_dirname = malloc(strlen(path) + 1);
     strcpy(path_for_dirname, path);
-	fe4_inode parent;
-	int r2 = get_inode_from_path(dirname(path_for_dirname), &parent);
+	fe4_inode *parent = get_inode_from_path(dirname(path_for_dirname));
 	free(path_for_dirname);
 
-	if (r2 == -1)
+	if (parent == NULL)
 		return -ENOENT;
 
-	if (!S_ISDIR(parent.stat.st_mode))
+	if (!S_ISDIR(parent->stat.st_mode))
 		return -ENOTDIR;
 
-	// TODO Here check permissions
+	fe4_inode *child = get_new_inode(S_IFREG);
 
-	fe4_inode child;
-	get_new_inode(&child, S_IFREG);
-	write_inode_in_table(&child);
+    char *path_for_basename = malloc(strlen(path) + 1);
+    strcpy(path_for_basename, path);
+    fe4_dirent de = {.inode_number = child->stat.st_ino};
+    strcpy(de.filename, basename(path_for_basename));
+    free(path_for_basename);
 
-	
-}*/
+    append_dirent_to_inode(parent, &de);
+
+    return 0;
+}
 
 #define OPTION(t, p) { t, offsetof(struct options, p), 1 }
 
@@ -196,29 +194,25 @@ static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 
 /*int fe4_chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
 	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *r = get_inode_from_path(path);
 
-	if (r == -1)
+	if (r == NULL)
 		return -ENOENT;
 
 	in.stat.st_mode = mode;
-
-	write_inode_at(in.stat.st_ino, &in);
 
 	return 0;
 }
 
 int fe4_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi) {
 	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *r = get_inode_from_path(path);
 
-	if (r == -1)
+	if (r == NULL)
 		return -ENOENT;
 
 	in.stat.st_uid = uid;
 	in.stat.st_gid = gid;
-
-	write_inode_at(in.stat.st_ino, &in);
 
 	return 0;
 }
@@ -242,8 +236,8 @@ int	fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) {
 	write_inode_at(in.stat.st_ino, &in);
 
 	return 0;
-}
-
+}*/
+/*
 int fe4_write(const char *path, const char *buf, size_t size, off_t offset,
 		       struct fuse_file_info *fi) {
 	fe4_inode in;
@@ -272,8 +266,8 @@ static const struct fuse_operations fe4_oper = {
 	.readdir	= fe4_readdir,
 	.open		  = fe4_open,
 	.read		  = fe4_read,
-  	/*.mknod    = fe4_mknod,
-	.chmod    = fe4_chmod,
+  	.mknod    = fe4_mknod,
+	/*.chmod    = fe4_chmod,
 	.chown    = fe4_chown,
 	.truncate = fe4_truncate,
 	.write    = fe4_write*/

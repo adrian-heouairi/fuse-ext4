@@ -93,6 +93,16 @@ ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset
 	return count;
 }
 
+ssize_t write_inode(fe4_inode *inode, const void *buf, size_t count, off_t offset) {
+    off_t len = inode->stat.st_size;
+    if (offset + count > len) {
+        inode->stat.st_size = offset + count;
+    }
+    memcpy(inode->contents + offset, buf, count);
+
+    return count;
+}
+
 fe4_inode *get_inode_from_path(const char *path) {
     // We assume that path is the path asked by FUSE (it is absolute, there are no trailing slashes, it doesn't contain "//", etc.)
     
@@ -141,4 +151,10 @@ fe4_dirent *get_dirent_at(fe4_inode *parent, int index) {
 
 fe4_inode *get_inode_at(ino_t index) {
     return &inodes[index];
+}
+
+void append_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent) {
+    int nb_children = get_nb_children(inode);
+    memcpy(inode->contents + nb_children * sizeof(fe4_dirent), dirent, sizeof(fe4_dirent));
+    inode->stat.st_size += sizeof(fe4_dirent);
 }

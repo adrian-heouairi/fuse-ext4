@@ -28,6 +28,8 @@ fe4_inode *get_new_inode(mode_t type);
 
 ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset);
 
+ssize_t write_inode(fe4_inode *inode, const void *buf, size_t count, off_t offset);
+
 fe4_inode *get_inode_from_path(const char *path);
 
 int get_nb_children(const fe4_inode *inode);
@@ -35,5 +37,7 @@ int get_nb_children(const fe4_inode *inode);
 fe4_dirent *get_dirent_at(fe4_inode *parent, int index);
 
 fe4_inode *get_inode_at(ino_t index);
+
+void append_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent);
 
 #endif // !DATA_STRUCTURES
