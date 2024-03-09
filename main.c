@@ -206,6 +206,10 @@ static int fe4_open(const char *path, struct fuse_file_info *fi) {
 //	if ((fi->flags & O_ACCMODE) != O_RDONLY)
 //		return -EACCES;
 
+    if (fi->flags & O_TRUNC) {
+        in->stat.st_size = 0;
+    }
+
 	return 0;
 }
 
@@ -257,50 +261,18 @@ int fe4_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi)
 	in.stat.st_gid = gid;
 
 	return 0;
+}*/
+
+int	fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) { // TODO Put zeroes
+	fe4_inode *in = get_inode_from_path(path);
+
+    if (in == NULL)
+        return -ENOENT;
+
+    in->stat.st_size = size;
+
+    return 0;
 }
-
-int	fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) {
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
-
-	if (r == -1)
-		return -ENOENT;
-
-	if (!S_ISREG(in.stat.st_mode))
-		return -ENOENT;
-
-	if (size > in.stat.st_size) {
-		memset(in.contents + in.stat.st_size, 0, size - in.stat.st_size);
-	} else {
-		in.stat.st_size = size;
-	}
-
-	write_inode_at(in.stat.st_ino, &in);
-
-	return 0;
-}*/
-/*
-int fe4_write(const char *path, const char *buf, size_t size, off_t offset,
-		       struct fuse_file_info *fi) {
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
-
-	if (r == -1)
-		return -ENOENT;
-
-	if (!S_ISREG(in.stat.st_mode))
-		return -ENOENT;
-
-	if (offset + size > in.stat.st_size) {
-		in.stat.st_size = offset + size;
-	}
-
-	memcpy(in.contents + offset, buf, size);
-
-	write_inode_at(in.stat.st_ino, &in);
-
-	return size;
-}*/
 
 static const struct fuse_operations fe4_oper = {
 	.init           = fe4_init,
@@ -310,9 +282,7 @@ static const struct fuse_operations fe4_oper = {
 	.read		  = fe4_read,
     .mknod    = fe4_mknod,
     .mkdir = fe4_mkdir,
-	/*.chmod    = fe4_chmod,
-	.chown    = fe4_chown,
-	.truncate = fe4_truncate,*/
+	.truncate = fe4_truncate,
 	.write    = fe4_write
 };
 
