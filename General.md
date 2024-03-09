@@ -27,3 +27,6 @@ fe4_inode0... fe4_inoden
 
 dump.asfilsys -> d
 write(d,inodes,n);
+
+# TODOS
+REFACTOR INITIALISATIONS BY USING MKNODE FUNC

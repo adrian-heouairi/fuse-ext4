@@ -20,9 +20,9 @@ struct fe4_dirent {
   ino_t inode_number;
 };
 
-// These functions return pointers to an fe4_inode which you can modify to directly affect the filesystem
+// These functions return pointers to an fe4_inode or fe4_dirent which you can modify to directly affect the filesystem
 
-void init_inodes();
+void init_inodes(void);
 
 fe4_inode *get_new_inode(mode_t type);
 
@@ -32,7 +32,7 @@ fe4_inode *get_inode_from_path(const char *path);
 
 int get_nb_children(const fe4_inode *inode);
 
-fe4_dirent *get_dirent_at(const fe4_inode *parent, int index);
+fe4_dirent *get_dirent_at(fe4_inode *parent, int index);
 
 fe4_inode *get_inode_at(ino_t index);
 

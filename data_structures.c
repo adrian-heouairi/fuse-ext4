@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "data_structures.h"
 //#include "sprintstatf.h"
@@ -19,17 +20,21 @@ void print_inode(const fe4_inode *inode) {
 
 fe4_inode inodes[256];
 
+ino_t get_next_free_inode_number(void) {
+    for (int i = 0; i < 256; i++) {
+        if (inodes[i].stat.st_size == -1) {
+            return i;
+        }
+    }
+
+    return ENOSPC; // TODO Error handling
+}
+
 // For now, should set: st_ino st_uid st_gid --- st_mode st_nlink st_size
 // Dirents should have . and .. as first two entries (manually added)
-void init_inodes() {
-    for (int i = 0; i < 256; i++) {
-        // inodes[i].stat.st_ino = i;
-        // inodes[i].stat.st_uid = getuid();
-        // inodes[i].stat.st_gid = getgid();
+void init_inodes(void) {
+    for (int i = 0; i < 256; i++)
         inodes[i].stat.st_size = -1; // -1 for unused
-
-        // inodes[i].stat.st_mode = 0755;
-    }
 
     //mode_t umask_arg = umask(022);
     //umask(umask_arg);
@@ -37,26 +42,30 @@ void init_inodes() {
 
     //inodes[ROOT_INODE].stat.st_mode |= S_IFDIR;
     //inodes[ROOT_INODE].stat.st_nlink = 2;
-    get_new_inode(&inodes[ROOT_INODE], S_IFDIR); // We know that inodes[ROOT_INODE].stat.st_ino == ROOT_INODE
-    inodes[ROOT_INODE].stat.st_size = 3  * sizeof(fe4_dirent);
+    fe4_inode *i = get_new_inode(S_IFDIR);
+    i->stat.st_size = 3  * sizeof(fe4_dirent);
     fe4_dirent parent = {.filename = "..", .inode_number = ROOT_INODE};
     fe4_dirent current = {.filename = ".", .inode_number = ROOT_INODE};
     fe4_dirent de = {.filename = "a", .inode_number = 1};
-    memcpy(inodes[ROOT_INODE].contents, &parent, sizeof(fe4_dirent));
-    memcpy(inodes[ROOT_INODE].contents + sizeof(fe4_dirent), &current, sizeof(fe4_dirent));
-    memcpy(inodes[ROOT_INODE].contents + 2 * sizeof(fe4_dirent), &de, sizeof(fe4_dirent));
+    memcpy(i->contents, &parent, sizeof(fe4_dirent));
+    memcpy(i->contents + sizeof(fe4_dirent), &current, sizeof(fe4_dirent));
+    memcpy(i->contents + 2 * sizeof(fe4_dirent), &de, sizeof(fe4_dirent));
     
     //inodes[1].stat.st_mode |= S_IFREG;
     //inodes[1].stat.st_nlink = 1;
-    get_new_inode(&inodes[1], S_IFREG);
-    inodes[1].stat.st_size = 2;
-    inodes[1].contents[0] = 'a';
-    inodes[1].contents[1] = 'b';
+    fe4_inode *i2 = get_new_inode(S_IFREG);
+    i2->stat.st_size = 2;
+    i2->contents[0] = 'a';
+    i2->contents[1] = 'b';
 }
 
-void get_new_inode(fe4_inode *inode, mode_t type) {
+fe4_inode *get_new_inode(mode_t type) {
+    ino_t new_inode_number = get_next_free_inode_number();
+
+    fe4_inode *inode = &inodes[new_inode_number];
+
     memset(inode, 0, sizeof(fe4_inode)); // Size is set to 0
-    inode->stat.st_ino = get_next_free_inode();
+    inode->stat.st_ino = new_inode_number;
     inode->stat.st_uid = getuid();
     inode->stat.st_gid = getgid();
     inode->stat.st_mode = type | 0755;
@@ -68,6 +77,8 @@ void get_new_inode(fe4_inode *inode, mode_t type) {
         //inode->stat.st_size = 2 * sizeof(fe4_dirent);
     } else
         inode->stat.st_nlink = 1;
+
+    return inode;
 }
 
 ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset) {
@@ -82,12 +93,11 @@ ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset
 	return count;
 }
 
-int get_inode_from_path(const char *path, fe4_inode *ret) {
+fe4_inode *get_inode_from_path(const char *path) {
     // We assume that path is the path asked by FUSE (it is absolute, there are no trailing slashes, it doesn't contain "//", etc.)
     
     if (strcmp(path, "/") == 0) {
-        get_inode_at(0, ret);
-        return 0;
+        return get_inode_at(ROOT_INODE);
     }
 
     char *path_copy = malloc(strlen(path) + 1);
@@ -99,18 +109,15 @@ int get_inode_from_path(const char *path, fe4_inode *ret) {
 
     l:
     for (int i = 0; i < get_nb_children(parent); i++) {
-        fe4_dirent dirent;
-        get_dirent_at(parent, i, &dirent);
+        const fe4_dirent *dirent = get_dirent_at(parent, i);
 
-        if (strcmp(dirent.filename, child) == 0) {
+        if (strcmp(dirent->filename, child) == 0) {
             if (grandchild == NULL) {
-                get_inode_at(dirent.inode_number, ret);
-                
                 free(path_copy);
-                return 0;
+                return get_inode_at(dirent->inode_number);
             }
 
-            get_inode_at(dirent.inode_number, parent);
+            parent = get_inode_at(dirent->inode_number);
             child = grandchild;
             grandchild = strtok(NULL, "/");
             goto l;
@@ -118,7 +125,7 @@ int get_inode_from_path(const char *path, fe4_inode *ret) {
     }
 
     free(path_copy);
-    return -1;
+    return NULL;
 }
 
 int get_nb_children(const fe4_inode *inode) {
@@ -128,28 +135,10 @@ int get_nb_children(const fe4_inode *inode) {
     return inode->stat.st_size / sizeof(fe4_dirent);
 }
 
-int get_dirent_at(const fe4_inode *parent, int index, fe4_dirent *ret) {
-    read_inode(parent, ret, sizeof(fe4_dirent), index * sizeof(fe4_dirent));
-
-    return 0;
+fe4_dirent *get_dirent_at(fe4_inode *parent, int index) {
+    return (fe4_dirent *)(parent->contents + index * sizeof(fe4_dirent));
 }
 
-int get_inode_at(ino_t index, fe4_inode *ret) {
-    memcpy(ret, &inodes[index], sizeof(fe4_inode));
-
-    return 0;
-}
-
-void write_inode_in_table(fe4_inode *to_write) {
-    memcpy(&inodes[to_write->stat.st_ino], to_write, sizeof(fe4_inode));
-}
-
-ino_t get_next_free_inode() {
-    for (int i = 0; i < 256; i++) {
-        if (inodes[i].stat.st_size == -1) {
-            return inodes[i].stat.st_ino;
-        }
-    }
-
-    return E_NOSCP; // TODO Error handling
+fe4_inode *get_inode_at(ino_t index) {
+    return &inodes[index];
 }

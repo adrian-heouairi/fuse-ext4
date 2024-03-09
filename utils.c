@@ -5,14 +5,14 @@
 #include <unistd.h>
 #include <string.h>
 
-char *basename(char *path) {
-    char *last_slash = strrchr(path, '/');
-    if (last_slash == NULL) {
-        return path;
-    } else {
-        return last_slash + 1;
-    }
-}
+//char *basename(char *path) {
+//    char *last_slash = strrchr(path, '/');
+//    if (last_slash == NULL) {
+//        return path;
+//    } else {
+//        return last_slash + 1;
+//    }
+//}
 
 /*char *basename(char *absolute_path){
   char *res  = malloc(255);

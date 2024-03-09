@@ -24,7 +24,7 @@ static struct options {
 	int show_help;
 } options;
 
-int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
+/*int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	fuse_log(FUSE_LOG_INFO, "mknod started\n");
     char *path_for_dirname = malloc(strlen(path) +1);
     strcpy(path_for_dirname,path);
@@ -105,17 +105,15 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	write_inode_in_table(&child);
 
 	
-}
+}*/
 
-#define OPTION(t, p)                           \
-    { t, offsetof(struct options, p), 1 }
+#define OPTION(t, p) { t, offsetof(struct options, p), 1 }
 
 static const struct fuse_opt option_spec[] = {
 	OPTION("-h", show_help),
 	OPTION("--help", show_help),
 	FUSE_OPT_END
 };
-
 
 static void *fe4_init(struct fuse_conn_info *conn,
 			struct fuse_config *cfg) {
@@ -130,15 +128,14 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 
 	(void) fi;
 
-	fe4_inode in; // We avoid managing memory ourselves that's why this is in the stack
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *in = get_inode_from_path(path);
 
 	//fuse_log(FUSE_LOG_INFO, "getattr requested %s: %\n", path, node_to_string(ret));
 
-	if (r == -1)
+	if (in == NULL)
 		return -ENOENT;
 
-	memcpy(stbuf, &in.stat, sizeof(struct stat));
+	memcpy(stbuf, &in->stat, sizeof(struct stat));
 
 	return 0;
 }
@@ -150,20 +147,18 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void) fi;
 	(void) flags;
 
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *in = get_inode_from_path(path);
 
-	if (r == -1)
+	if (in == NULL)
 		return -ENOENT;
 
-	if (!S_ISDIR(in.stat.st_mode))
+	if (!S_ISDIR(in->stat.st_mode))
 		return -ENOENT;
 		
-	for (int i = 0; i < get_nb_children(&in); i++) {
-		fe4_dirent de;
-		get_dirent_at(&in, i, &de);
+	for (int i = 0; i < get_nb_children(in); i++) {
+		fe4_dirent *de = get_dirent_at(in, i);
 
-		filler(buf, de.filename, NULL, 0, 0);
+		filler(buf, de->filename, NULL, 0, 0);
 	}
 
 	//fuse_log(FUSE_LOG_INFO, "readdir requested %s: %s\n", path, node_to_string(ret));
@@ -172,13 +167,12 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 
 static int fe4_open(const char *path, struct fuse_file_info *fi) {
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *in = get_inode_from_path(path);
 
-	if (r == -1)
+	if (in == NULL)
 		return -ENOENT;
 
-	if (!S_ISREG(in.stat.st_mode))
+	if (!S_ISREG(in->stat.st_mode))
 		return -ENOENT;
 
 	if ((fi->flags & O_ACCMODE) != O_RDONLY)
@@ -189,19 +183,18 @@ static int fe4_open(const char *path, struct fuse_file_info *fi) {
 
 static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi) {
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
+	fe4_inode *in = get_inode_from_path(path);
 
-	if (r == -1)
+	if (in == NULL)
 		return -ENOENT;
 
-	if (!S_ISREG(in.stat.st_mode))
+	if (!S_ISREG(in->stat.st_mode))
 		return -ENOENT;
 
-	return read_inode(&in, buf, size, offset);
+	return read_inode(in, buf, size, offset);
 }
 
-int fe4_chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
+/*int fe4_chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
 	fe4_inode in;
 	int r = get_inode_from_path(path, &in);
 
@@ -271,7 +264,7 @@ int fe4_write(const char *path, const char *buf, size_t size, off_t offset,
 	write_inode_at(in.stat.st_ino, &in);
 
 	return size;
-}
+}*/
 
 static const struct fuse_operations fe4_oper = {
 	.init           = fe4_init,
@@ -279,11 +272,11 @@ static const struct fuse_operations fe4_oper = {
 	.readdir	= fe4_readdir,
 	.open		  = fe4_open,
 	.read		  = fe4_read,
-  	.mknod    = fe4_mknod,
+  	/*.mknod    = fe4_mknod,
 	.chmod    = fe4_chmod,
 	.chown    = fe4_chown,
 	.truncate = fe4_truncate,
-	.write    = fe4_write
+	.write    = fe4_write*/
 };
 
 static void show_help(const char *progname) {
