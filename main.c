@@ -203,8 +203,8 @@ static int fe4_open(const char *path, struct fuse_file_info *fi) {
 	if (!S_ISREG(in->stat.st_mode))
 		return -ENOENT;
 
-	if ((fi->flags & O_ACCMODE) != O_RDONLY)
-		return -EACCES;
+//	if ((fi->flags & O_ACCMODE) != O_RDONLY)
+//		return -EACCES;
 
 	return 0;
 }
@@ -220,6 +220,18 @@ static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
 		return -ENOENT;
 
 	return read_inode(in, buf, size, offset);
+}
+
+static int fe4_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    fe4_inode *in = get_inode_from_path(path);
+
+    if (in == NULL)
+        return -ENOENT;
+
+    if (!S_ISREG(in->stat.st_mode))
+        return -ENOENT;
+
+    return write_inode(in, buf, size, offset);
 }
 
 /*int fe4_chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
@@ -300,8 +312,8 @@ static const struct fuse_operations fe4_oper = {
     .mkdir = fe4_mkdir,
 	/*.chmod    = fe4_chmod,
 	.chown    = fe4_chown,
-	.truncate = fe4_truncate,
-	.write    = fe4_write*/
+	.truncate = fe4_truncate,*/
+	.write    = fe4_write
 };
 
 static void show_help(const char *progname) {
