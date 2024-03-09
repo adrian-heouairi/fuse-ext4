@@ -24,53 +24,7 @@ static struct options {
 	int show_help;
 } options;
 
-/*int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
-	fuse_log(FUSE_LOG_INFO, "mknod started\n");
-    char *path_for_dirname = malloc(strlen(path) +1);
-    strcpy(path_for_dirname,path);
-	fe4_inode in;
-	int r = get_inode_from_path(path, &in);
-    fuse_log(FUSE_LOG_INFO, "after retriving inode\n");
-	if (r == -1) {
-		fe4_inode *next_inode = get_next_free_inode();
-		if (next_inode == NULL) {
-			fuse_log(FUSE_LOG_ERR, "No more inodes available\n");
-			return -ENOSPC;
-		}
-		next_inode->stat.st_mode = mode;
-		next_inode->stat.st_dev = dev;
-		next_inode->stat.st_nlink = 1;
-		next_inode->stat.st_uid = getuid();
-		next_inode->stat.st_gid = getgid();
-        fuse_log(FUSE_LOG_INFO, "after filling inode\n");
-		fe4_inode parent;
-		int res = get_inode_from_path(dirname(path_for_dirname),&parent);
-        fuse_log(FUSE_LOG_INFO, "GETTING PARENT INODE...");
-		if (res == -1) {
-            fuse_log(FUSE_LOG_INFO, "GETTING PARENT INODE FAILED");
-			fuse_log(FUSE_LOG_ERR, "No parent found\n");
-			return -ENOENT;
-		} else if (!S_ISDIR(parent.stat.st_mode)) {
-			fuse_log(FUSE_LOG_ERR, "Parent is not a directory\n");
-			return -ENOTDIR;
-		} else {
-			fe4_dirent de = {.inode_number = next_inode->stat.st_ino};
-            
-            memcpy(de.filename,basename(path_for_dirname), strlen(basename(path_for_dirname)));
-			memcpy(parent.contents + parent.stat.st_size, &de, sizeof(fe4_dirent));
-			parent.stat.st_size += sizeof(fe4_dirent);
-            fuse_log(FUSE_LOG_INFO, "after adding dirent to parent\n");
-		}
-
-	}
-	// TODO: hanle errors e.g. user can not create file because of permissions or no space left on dev.
-	// TODO: make sure that time is updated when we implement it
-	fuse_log(FUSE_LOG_INFO, "mknod ended\n");
-
-	return 0;
-}*/
-
-int fe4_mkdir(const char *path, mode_t mode) {
+static int fe4_mkdir(const char *path, mode_t mode) {
     fe4_inode *already_there = get_inode_from_path(path);
 
     if (already_there != NULL)
@@ -100,7 +54,7 @@ int fe4_mkdir(const char *path, mode_t mode) {
     return 0;
 }
 
-int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
+static int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	if (!S_ISREG(mode)) {
 		fuse_log(FUSE_LOG_INFO, "Unsupported type requested in mknod\n");
 		return -EINVAL;
@@ -238,32 +192,7 @@ static int fe4_write(const char *path, const char *buf, size_t size, off_t offse
     return write_inode(in, buf, size, offset);
 }
 
-/*int fe4_chmod(const char *path, mode_t mode, struct fuse_file_info *fi) {
-	fe4_inode in;
-	fe4_inode *r = get_inode_from_path(path);
-
-	if (r == NULL)
-		return -ENOENT;
-
-	in.stat.st_mode = mode;
-
-	return 0;
-}
-
-int fe4_chown(const char *path, uid_t uid, gid_t gid, struct fuse_file_info *fi) {
-	fe4_inode in;
-	fe4_inode *r = get_inode_from_path(path);
-
-	if (r == NULL)
-		return -ENOENT;
-
-	in.stat.st_uid = uid;
-	in.stat.st_gid = gid;
-
-	return 0;
-}*/
-
-int	fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) { // TODO Put zeroes
+static int fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) { // TODO Put zeroes
 	fe4_inode *in = get_inode_from_path(path);
 
     if (in == NULL)
@@ -274,6 +203,12 @@ int	fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) { // T
     return 0;
 }
 
+static int fe4_unlink(const char *path) {}
+
+static int fe4_rmdir(const char *path) {}
+
+static int fe4_rename(const char *from, const char *to, unsigned int flags) {}
+
 static const struct fuse_operations fe4_oper = {
 	.init           = fe4_init,
 	.getattr	= fe4_getattr,
@@ -283,7 +218,11 @@ static const struct fuse_operations fe4_oper = {
     .mknod    = fe4_mknod,
     .mkdir = fe4_mkdir,
 	.truncate = fe4_truncate,
-	.write    = fe4_write
+	.write    = fe4_write,
+
+//    .unlink = fe4_unlink,
+//    .rmdir = fe4_rmdir,
+//    .rename = fe4_rename,
 };
 
 static void show_help(const char *progname) {
