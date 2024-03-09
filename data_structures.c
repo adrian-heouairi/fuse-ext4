@@ -42,24 +42,10 @@ void init_inodes(void) {
 
     //inodes[ROOT_INODE].stat.st_mode |= S_IFDIR;
     //inodes[ROOT_INODE].stat.st_nlink = 2;
-    fe4_inode *i = get_new_inode(S_IFDIR);
-    i->stat.st_size = 3  * sizeof(fe4_dirent);
-    fe4_dirent parent = {.filename = "..", .inode_number = ROOT_INODE};
-    fe4_dirent current = {.filename = ".", .inode_number = ROOT_INODE};
-    fe4_dirent de = {.filename = "a", .inode_number = 1};
-    memcpy(i->contents, &parent, sizeof(fe4_dirent));
-    memcpy(i->contents + sizeof(fe4_dirent), &current, sizeof(fe4_dirent));
-    memcpy(i->contents + 2 * sizeof(fe4_dirent), &de, sizeof(fe4_dirent));
-    
-    //inodes[1].stat.st_mode |= S_IFREG;
-    //inodes[1].stat.st_nlink = 1;
-    fe4_inode *i2 = get_new_inode(S_IFREG);
-    i2->stat.st_size = 2;
-    i2->contents[0] = 'a';
-    i2->contents[1] = 'b';
+    get_new_dir_inode(ROOT_INODE);
 }
 
-fe4_inode *get_new_inode(mode_t type) {
+fe4_inode *get_new_dir_inode(ino_t parent_inode_number) {
     ino_t new_inode_number = get_next_free_inode_number();
 
     fe4_inode *inode = &inodes[new_inode_number];
@@ -68,15 +54,30 @@ fe4_inode *get_new_inode(mode_t type) {
     inode->stat.st_ino = new_inode_number;
     inode->stat.st_uid = getuid();
     inode->stat.st_gid = getgid();
-    inode->stat.st_mode = type | 0755;
+    inode->stat.st_mode = S_IFDIR | 0755;
 
-    if (type == S_IFDIR) {
-        inode->stat.st_nlink = 2;
+    inode->stat.st_nlink = 2;
 
-        // TODO Here add . and ..
-        //inode->stat.st_size = 2 * sizeof(fe4_dirent);
-    } else
-        inode->stat.st_nlink = 1;
+    fe4_dirent current = {.filename = ".", .inode_number = new_inode_number};
+    fe4_dirent parent = {.filename = "..", .inode_number = parent_inode_number};
+    append_dirent_to_inode(inode, &current);
+    append_dirent_to_inode(inode, &parent);
+
+    return inode;
+}
+
+fe4_inode *get_new_file_inode(void) {
+    ino_t new_inode_number = get_next_free_inode_number();
+
+    fe4_inode *inode = &inodes[new_inode_number];
+
+    memset(inode, 0, sizeof(fe4_inode)); // Size is set to 0
+    inode->stat.st_ino = new_inode_number;
+    inode->stat.st_uid = getuid();
+    inode->stat.st_gid = getgid();
+    inode->stat.st_mode = S_IFREG | 0755;
+
+    inode->stat.st_nlink = 1;
 
     return inode;
 }

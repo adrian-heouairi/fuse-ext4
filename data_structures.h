@@ -24,7 +24,9 @@ struct fe4_dirent {
 
 void init_inodes(void);
 
-fe4_inode *get_new_inode(mode_t type);
+fe4_inode *get_new_dir_inode(ino_t parent_inode_number);
+
+fe4_inode *get_new_file_inode(void);
 
 ssize_t read_inode(const fe4_inode *inode, void *buf, size_t count, off_t offset);
 

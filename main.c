@@ -70,6 +70,36 @@ static struct options {
 	return 0;
 }*/
 
+int fe4_mkdir(const char *path, mode_t mode) {
+    fe4_inode *already_there = get_inode_from_path(path);
+
+    if (already_there != NULL)
+        return -EEXIST;
+
+    char *path_for_dirname = malloc(strlen(path) + 1);
+    strcpy(path_for_dirname, path);
+    fe4_inode *parent = get_inode_from_path(dirname(path_for_dirname));
+    free(path_for_dirname);
+
+    if (parent == NULL)
+        return -ENOENT;
+
+    if (!S_ISDIR(parent->stat.st_mode))
+        return -ENOTDIR;
+
+    fe4_inode *child = get_new_dir_inode(parent->stat.st_ino); // TODO Add . and ..
+
+    char *path_for_basename = malloc(strlen(path) + 1);
+    strcpy(path_for_basename, path);
+    fe4_dirent de = {.inode_number = child->stat.st_ino};
+    strcpy(de.filename, basename(path_for_basename));
+    free(path_for_basename);
+
+    append_dirent_to_inode(parent, &de);
+
+    return 0;
+}
+
 int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	if (!S_ISREG(mode)) {
 		fuse_log(FUSE_LOG_INFO, "Unsupported type requested in mknod\n");
@@ -92,7 +122,7 @@ int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
 	if (!S_ISDIR(parent->stat.st_mode))
 		return -ENOTDIR;
 
-	fe4_inode *child = get_new_inode(S_IFREG);
+	fe4_inode *child = get_new_file_inode();
 
     char *path_for_basename = malloc(strlen(path) + 1);
     strcpy(path_for_basename, path);
@@ -266,7 +296,8 @@ static const struct fuse_operations fe4_oper = {
 	.readdir	= fe4_readdir,
 	.open		  = fe4_open,
 	.read		  = fe4_read,
-  	.mknod    = fe4_mknod,
+    .mknod    = fe4_mknod,
+    .mkdir = fe4_mkdir,
 	/*.chmod    = fe4_chmod,
 	.chown    = fe4_chown,
 	.truncate = fe4_truncate,
