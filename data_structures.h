@@ -46,5 +46,8 @@ fe4_inode *get_inode_at(ino_t index);
 
 void add_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent);
 
+void delete_inode_at(ino_t index);
+
+void delete_dirent_at(fe4_inode *inode, int index);
 
 #endif // !DATA_STRUCTURES

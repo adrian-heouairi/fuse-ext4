@@ -175,3 +175,19 @@ void add_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent) {
 
     write_inode(inode, dirent, sizeof(fe4_dirent), next * sizeof(fe4_dirent));
 }
+
+void delete_inode_at(ino_t index) {
+    fe4_inode *inode = get_inode_at(index);
+    inode->stat.st_size = -1;
+}
+
+void delete_dirent_at(fe4_inode *inode, int index) {
+    if (!S_ISDIR(inode->stat.st_mode))
+        return;
+
+    fe4_dirent *dirents = (fe4_dirent *)inode->contents;
+    strcpy(dirents[index].filename, "/");
+
+    if (index == get_nb_children(inode) - 1)
+        inode->stat.st_size -= sizeof(fe4_dirent);
+}
