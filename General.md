@@ -27,3 +27,5 @@ write(d,inodes,n);
 
 # TODOS
 REFACTOR INITIALISATIONS BY USING MKNODE FUNC
+renommer data_structures
+utiliser get_inode_at au lieu de &inodes[x]

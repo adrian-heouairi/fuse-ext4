@@ -49,7 +49,7 @@ static int fe4_mkdir(const char *path, mode_t mode) {
     strcpy(de.filename, basename(path_for_basename));
     free(path_for_basename);
 
-    append_dirent_to_inode(parent, &de);
+    add_dirent_to_inode(parent, &de);
 
     return 0;
 }
@@ -84,7 +84,7 @@ static int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
     strcpy(de.filename, basename(path_for_basename));
     free(path_for_basename);
 
-    append_dirent_to_inode(parent, &de);
+    add_dirent_to_inode(parent, &de);
 
     return 0;
 }
@@ -112,8 +112,6 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 
 	fe4_inode *in = get_inode_from_path(path);
 
-	//fuse_log(FUSE_LOG_INFO, "getattr requested %s: %\n", path, node_to_string(ret));
-
 	if (in == NULL)
 		return -ENOENT;
 
@@ -138,7 +136,10 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		return -ENOENT;
 		
 	for (int i = 0; i < get_nb_children(in); i++) {
-		fe4_dirent *de = get_dirent_at(in, i);
+		const fe4_dirent *de = get_dirent_at(in, i);
+
+        if (strcmp(de->filename, "/") == 0)
+            continue;
 
 		filler(buf, de->filename, NULL, 0, 0);
 	}
@@ -160,15 +161,13 @@ static int fe4_open(const char *path, struct fuse_file_info *fi) {
 //	if ((fi->flags & O_ACCMODE) != O_RDONLY)
 //		return -EACCES;
 
-    if (fi->flags & O_TRUNC) {
+    if (fi->flags & O_TRUNC)
         in->stat.st_size = 0;
-    }
 
-	return 0;
+    return 0;
 }
 
-static int fe4_read(const char *path, char *buf, size_t size, off_t offset,
-		      struct fuse_file_info *fi) {
+static int fe4_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
 	fe4_inode *in = get_inode_from_path(path);
 
 	if (in == NULL)

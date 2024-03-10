@@ -6,9 +6,9 @@
 #include "data_structures.h"
 //#include "sprintstatf.h"
 
-void print_inode(const fe4_inode *inode) {
-    // sprintf(ret + strlen(ret), "nb_children: %d ", n->nb_children);
+fe4_inode inodes[MAX_INODES];
 
+void print_inode(const fe4_inode *inode) {
     printf("inode: %p\n", (void *)inode);
     printf("inode->stat.st_ino: %lu\n", inode->stat.st_ino);
     printf("inode->stat.st_uid: %u\n", inode->stat.st_uid);
@@ -18,10 +18,8 @@ void print_inode(const fe4_inode *inode) {
     printf("inode->stat.st_size: %lu\n", inode->stat.st_size);
 }
 
-fe4_inode inodes[256];
-
 ino_t get_next_free_inode_number(void) {
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < MAX_INODES; i++) {
         if (inodes[i].stat.st_size == -1) {
             return i;
         }
@@ -30,25 +28,32 @@ ino_t get_next_free_inode_number(void) {
     return ENOSPC; // TODO Error handling
 }
 
-// For now, should set: st_ino st_uid st_gid --- st_mode st_nlink st_size
-// Dirents should have . and .. as first two entries (manually added)
+int get_next_free_dirent_number(const fe4_inode *inode) {
+    if (!S_ISDIR(inode->stat.st_mode))
+        return -1;
+
+    fe4_dirent *dirents = (fe4_dirent *)inode->contents;
+
+    for (int i = 0; i < MAX_DIRENTS; i++) {
+        if (strcmp(dirents[i].filename, "/") == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void init_inodes(void) {
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i < MAX_INODES; i++)
         inodes[i].stat.st_size = -1; // -1 for unused
 
-    //mode_t umask_arg = umask(022);
-    //umask(umask_arg);
-    //inodes[ROOT_INODE].stat.st_mode = S_IFDIR | ~umask_arg;
-
-    //inodes[ROOT_INODE].stat.st_mode |= S_IFDIR;
-    //inodes[ROOT_INODE].stat.st_nlink = 2;
     get_new_dir_inode(ROOT_INODE);
 }
 
 fe4_inode *get_new_dir_inode(ino_t parent_inode_number) {
     ino_t new_inode_number = get_next_free_inode_number();
 
-    fe4_inode *inode = &inodes[new_inode_number];
+    fe4_inode *inode = get_inode_at(new_inode_number);
 
     memset(inode, 0, sizeof(fe4_inode)); // Size is set to 0
     inode->stat.st_ino = new_inode_number;
@@ -58,10 +63,15 @@ fe4_inode *get_new_dir_inode(ino_t parent_inode_number) {
 
     inode->stat.st_nlink = 2;
 
+    fe4_dirent *dirents = (fe4_dirent *)inode->contents;
+    for (int i = 0; i < MAX_DIRENTS; i++) {
+        strcpy(dirents[i].filename, "/");
+    }
+
     fe4_dirent current = {.filename = ".", .inode_number = new_inode_number};
     fe4_dirent parent = {.filename = "..", .inode_number = parent_inode_number};
-    append_dirent_to_inode(inode, &current);
-    append_dirent_to_inode(inode, &parent);
+    add_dirent_to_inode(inode, &current);
+    add_dirent_to_inode(inode, &parent);
 
     return inode;
 }
@@ -69,7 +79,7 @@ fe4_inode *get_new_dir_inode(ino_t parent_inode_number) {
 fe4_inode *get_new_file_inode(void) {
     ino_t new_inode_number = get_next_free_inode_number();
 
-    fe4_inode *inode = &inodes[new_inode_number];
+    fe4_inode *inode = get_inode_at(new_inode_number);
 
     memset(inode, 0, sizeof(fe4_inode)); // Size is set to 0
     inode->stat.st_ino = new_inode_number;
@@ -114,13 +124,16 @@ fe4_inode *get_inode_from_path(const char *path) {
     char *path_copy = malloc(strlen(path) + 1);
     strcpy(path_copy, path);
 
-    fe4_inode *parent = &inodes[ROOT_INODE];
+    fe4_inode *parent = get_inode_at(ROOT_INODE);
     char *child = strtok(path_copy, "/");
     char *grandchild = strtok(NULL, "/");
 
     l:
     for (int i = 0; i < get_nb_children(parent); i++) {
         const fe4_dirent *dirent = get_dirent_at(parent, i);
+
+        if (strcmp(dirent->filename, "/") == 0)
+            continue;
 
         if (strcmp(dirent->filename, child) == 0) {
             if (grandchild == NULL) {
@@ -154,8 +167,11 @@ fe4_inode *get_inode_at(ino_t index) {
     return &inodes[index];
 }
 
-void append_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent) {
-    int nb_children = get_nb_children(inode);
-    memcpy(inode->contents + nb_children * sizeof(fe4_dirent), dirent, sizeof(fe4_dirent));
-    inode->stat.st_size += sizeof(fe4_dirent);
+void add_dirent_to_inode(fe4_inode *inode, const fe4_dirent *dirent) {
+    if (!S_ISDIR(inode->stat.st_mode))
+        return;
+
+    int next = get_next_free_dirent_number(inode);
+
+    write_inode(inode, dirent, sizeof(fe4_dirent), next * sizeof(fe4_dirent));
 }
