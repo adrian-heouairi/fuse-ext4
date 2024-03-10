@@ -244,7 +244,50 @@ static int fe4_unlink(const char *path) {
     return -EBUSY; // To identify this error
 }
 
-//static int fe4_rmdir(const char *path) {}
+static int fe4_rmdir(const char *path) {
+    fe4_inode *in = get_inode_from_path(path);
+
+    if (in == NULL)
+        return -ENOENT;
+
+    if (!S_ISDIR(in->stat.st_mode))
+        return -ENOENT;
+
+    if (get_nb_children(in) > 2)
+        return -ENOTEMPTY;
+
+    char *dirnm = dirname2(path);
+    char *basenm = basename2(path);
+
+    fe4_inode *parent = get_inode_from_path(dirnm);
+
+    if (parent == NULL)
+        return -ENOENT;
+
+    if (!S_ISDIR(parent->stat.st_mode))
+        return -ENOTDIR;
+
+    delete_inode_at(in->stat.st_ino);
+
+    for (int i = 0; i < get_nb_children(parent); i++) {
+        fe4_dirent *de = get_dirent_at(parent, i);
+
+        if (strcmp(de->filename, "/") == 0)
+            continue;
+
+        if (strcmp(de->filename, basenm) == 0) {
+            delete_dirent_at(parent, i);
+
+            free(dirnm);
+            free(basenm);
+            return 0;
+        }
+    }
+
+    free(dirnm);
+    free(basenm);
+    return -EBUSY; // To identify this error
+}
 
 //static int fe4_rename(const char *from, const char *to, unsigned int flags) {}
 
@@ -260,7 +303,7 @@ static const struct fuse_operations fe4_oper = {
 	.write    = fe4_write,
 
     .unlink = fe4_unlink,
-//    .rmdir = fe4_rmdir,
+    .rmdir = fe4_rmdir,
 //    .rename = fe4_rename,
 };
 
