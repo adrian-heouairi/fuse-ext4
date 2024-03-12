@@ -52,8 +52,10 @@ Mkfile.old
 dkms.conf
 
 /fuse-ext4
+/fe4
 /mntpt
 /dumps
+/Test/mknod
 
 .vscode
 
