@@ -7,6 +7,7 @@ gérer nlink on delete, implémenter link
 implémenter chmod et chown
 faire des tests automatisés
 comportement correct lors de mv vers un fichier existant
+renommer le projet à fe4
 
 # Documentation
 
