@@ -41,7 +41,7 @@ static int fe4_mkdir(const char *path, mode_t mode) {
     if (!S_ISDIR(parent->stat.st_mode))
         return -ENOTDIR;
 
-    fe4_inode *child = get_new_dir_inode(parent->stat.st_ino); // TODO Add . and ..
+    fe4_inode *child = get_new_dir_inode(parent->stat.st_ino);
 
     char *path_for_basename = malloc(strlen(path) + 1);
     strcpy(path_for_basename, path);
@@ -324,7 +324,7 @@ static int fe4_rename(const char *from, const char *to, unsigned int flags) {
     fe4_dirent new_dirent = {.inode_number = in->stat.st_ino};
     strcpy(new_dirent.filename, basenm2);
 
-    fe4_inode *parent2 = get_inode_from_path(dirnm2);
+    fe4_inode *parent2 = get_inode_from_path(dirnm2); // TODO Vérifier que parent2 existe bien avant cette ligne
 
     add_dirent_to_inode(parent2, &new_dirent);
 

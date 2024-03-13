@@ -65,7 +65,7 @@ fe4_inode *get_new_dir_inode(ino_t parent_inode_number) {
 
     fe4_dirent *dirents = (fe4_dirent *)inode->contents;
     for (int i = 0; i < MAX_DIRENTS; i++) {
-        strcpy(dirents[i].filename, "/");
+        strcpy(dirents[i].filename, "/"); // TODO Useless?
     }
 
     fe4_dirent current = {.filename = ".", .inode_number = new_inode_number};
