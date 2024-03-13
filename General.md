@@ -1,5 +1,9 @@
 # TODO
 
+rapport si on a le temps
+
+préparer soutenance d'abord pour le 28, 10 min un seul parle, que de la démo, expliquer fuse, montré que c'est mount, géré par le process fe4 et enfin montrer le code en expliquant 'echo a > a' en disant contents est liste de fe4_dirent, etc ; expliquer 'cat d/a', slides, s'entrainer, 10 minutes
+
 renommer data_structures
 utiliser get_inode_at au lieu d'accéder à inodes directement
 ne pas accéder à contents directement
