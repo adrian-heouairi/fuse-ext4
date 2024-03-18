@@ -85,7 +85,7 @@ fe4_inode *get_new_file_inode(void) {
     inode->stat.st_ino = new_inode_number;
     inode->stat.st_uid = getuid();
     inode->stat.st_gid = getgid();
-    inode->stat.st_mode = S_IFREG | 0755;
+    inode->stat.st_mode = S_IFREG | 0644;
 
     inode->stat.st_nlink = 1;
 

@@ -25,7 +25,7 @@ deps:
 	echo "Dependency check complete."
 
 # Compiling the program
-$(TARGET): deps $(SOURCES)
+$(TARGET): $(SOURCES) # Should have deps but we remove it for presentation
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 
 # Target to run the program
@@ -39,8 +39,7 @@ clean:
 	killall $(TARGET) || true
 	sleep 1
 	rm -vf $(TARGET)
-	rmdir -v mntpt
-	echo "Cleaned."
+	rm -rf mntpt
 
 test: Test/mknod.c
 	$(CC) $(CFLAGS) -o Test/mknod Test/mknod.c $(LDFLAGS)

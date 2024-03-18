@@ -25,6 +25,8 @@ static struct options {
 } options;
 
 static int fe4_mkdir(const char *path, mode_t mode) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_mkdir started at path %s\n\033[m", path);
+
     fe4_inode *already_there = get_inode_from_path(path);
 
     if (already_there != NULL)
@@ -55,8 +57,10 @@ static int fe4_mkdir(const char *path, mode_t mode) {
 }
 
 static int fe4_mknod(const char *path, mode_t mode, dev_t dev) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_mknod started at path %s\n\033[m", path);
+
 	if (!S_ISREG(mode)) {
-		fuse_log(FUSE_LOG_INFO, "Unsupported type requested in mknod\n");
+		//fuse_log(FUSE_LOG_INFO, "Unsupported type requested in mknod\n");
 		return -EINVAL;
 	}
 
@@ -104,9 +108,8 @@ static void *fe4_init(struct fuse_conn_info *conn,
 	return NULL;
 }
 
-static int fe4_getattr(const char *path, struct stat *stbuf,
-			 struct fuse_file_info *fi) {
-	fuse_log(FUSE_LOG_INFO, "getattr started with path = %s\n", path);
+static int fe4_getattr(const char *path, struct stat *stbuf, struct fuse_file_info *fi) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_getattr (stat) started at path %s\n\033[m", path);
 
 	(void) fi;
 
@@ -123,6 +126,8 @@ static int fe4_getattr(const char *path, struct stat *stbuf,
 static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi,
 			 enum fuse_readdir_flags flags) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_readdir started at path %s\n\033[m", path);
+
 	(void) offset;
 	(void) fi;
 	(void) flags;
@@ -150,6 +155,8 @@ static int fe4_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 
 static int fe4_open(const char *path, struct fuse_file_info *fi) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_open started at path %s\n\033[m", path);
+
 	fe4_inode *in = get_inode_from_path(path);
 
 	if (in == NULL)
@@ -168,6 +175,8 @@ static int fe4_open(const char *path, struct fuse_file_info *fi) {
 }
 
 static int fe4_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_read started at path %s\n\033[m", path);
+
 	fe4_inode *in = get_inode_from_path(path);
 
 	if (in == NULL)
@@ -180,6 +189,8 @@ static int fe4_read(const char *path, char *buf, size_t size, off_t offset, stru
 }
 
 static int fe4_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_write started at path %s\n\033[m", path);
+
     fe4_inode *in = get_inode_from_path(path);
 
     if (in == NULL)
@@ -192,6 +203,8 @@ static int fe4_write(const char *path, const char *buf, size_t size, off_t offse
 }
 
 static int fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi) { // TODO Put zeroes
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_truncate started at path %s\n\033[m", path);
+
 	fe4_inode *in = get_inode_from_path(path);
 
     if (in == NULL)
@@ -203,6 +216,8 @@ static int fe4_truncate(const char *path, off_t size, struct fuse_file_info *fi)
 }
 
 static int fe4_unlink(const char *path) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_unlink started at path %s\n\033[m", path);
+
     fe4_inode *in = get_inode_from_path(path);
 
     if (in == NULL)
@@ -245,6 +260,8 @@ static int fe4_unlink(const char *path) {
 }
 
 static int fe4_rmdir(const char *path) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_rmdir started at path %s\n\033[m", path);
+
     fe4_inode *in = get_inode_from_path(path);
 
     if (in == NULL)
@@ -290,6 +307,8 @@ static int fe4_rmdir(const char *path) {
 }
 
 static int fe4_rename(const char *from, const char *to, unsigned int flags) {
+    fuse_log(FUSE_LOG_INFO, "\033[1;35mfe4_rename started from %s to %s\n\033[m", from, to);
+
     fe4_inode *in = get_inode_from_path(from);
 
     if (in == NULL)
