@@ -355,7 +355,8 @@ static const struct fuse_operations fe4_oper = {
 	.getattr	= fe4_getattr,
 	.readdir	= fe4_readdir,
 	.open		  = fe4_open,
-	.read		  = fe4_read,
+	.read		  = fe4_read, // Pointeur vers une fonction de signature :
+                              // int(*)(const char *, char *, size_t, off_t, struct fuse_file_info *)
     .mknod    = fe4_mknod,
     .mkdir = fe4_mkdir,
 	.truncate = fe4_truncate,

@@ -39,9 +39,9 @@ cd mntpt # Nous resterons dans ce dossier pour le reste de la présentation
 pwd
 ls -Rla .
 read; clear
-realpath .
-realpath ..
-read; clear
+#realpath .
+#realpath ..
+#read; clear
 echo abc > a
 ls -Rla .
 read; clear
@@ -50,31 +50,37 @@ read; clear
 mkdir -v x
 ls -Rla .
 read; clear
-ls -la x/..
-read; clear
-echo def > x/b
-ls -Rla .
-read; clear
+#ls -la x/..
+#read; clear
+#echo def > x/b
+#ls -Rla .
+#read; clear
 mv -v a x/a
 ls -Rla .
 read; clear
-stat x/a
-read; clear
+#stat x/a
+#read; clear
 rmdir -v x # Fails
 ls -Rla .
 read; clear
-touch c
-ls -la .
-read; clear
-rm -v x/a x/b
+#touch c
+#ls -la .
+#read; clear
+
+rm -rvf x
 ls -Rla .
 read; clear
-rmdir -v x
-ls -Rla .
-read; clear
-mkdir -pv y/z
-ls -Rla .
-read; clear
-rm -rvf y
-ls -Rla .
-read; clear
+
+#rm -v x/a x/b
+#ls -Rla .
+#read; clear
+#rmdir -v x
+#ls -Rla .
+#read; clear
+
+#mkdir -pv y/z
+#ls -Rla .
+#read; clear
+#rm -rvf y
+#ls -Rla .
+#read; clear
